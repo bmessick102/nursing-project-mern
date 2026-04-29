@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 class Crypt {
   instance: typeof bcrypt = bcrypt
