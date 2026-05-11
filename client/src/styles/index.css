@@ -1,19 +1,103 @@
 :root {
-  --online: #44b700;
-  --offline: #b74400;
+  /* Concordia University Wisconsin brand palette */
+  --cuw-navy: #003D82;
+  --cuw-navy-dark: #002759;
+  --cuw-navy-light: #1B5BB8;
+  --cuw-blue: #245699;
+  --cuw-gold: #FFB81C;
+  --cuw-gold-dark: #E0A116;
+  --cuw-gray: #B1B3B3;
+  --cuw-gray-light: #F4F4F4;
+  --cuw-gray-bg: #F8F9FA;
+  --cuw-text: #1F2937;
+  --cuw-text-muted: #6B7280;
+  --cuw-border: #E5E7EB;
+  --cuw-white: #FFFFFF;
+
+  --online: #2E7D32;
+  --offline: #B71C1C;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
   font-size: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Open Sans', 'Helvetica Neue', Arial, sans-serif;
+  color: var(--cuw-text);
+  background-color: var(--cuw-gray-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Merriweather', Georgia, serif;
+  font-weight: 700;
+  color: var(--cuw-navy);
+  letter-spacing: -0.01em;
+}
+
+h5,
+h6 {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 700;
+  color: var(--cuw-navy);
+}
+
+a {
+  color: var(--cuw-navy);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--cuw-navy-light);
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+::selection {
+  background-color: var(--cuw-navy);
+  color: var(--cuw-white);
+}
+
+/* Scrollbar styling — subtle CUW theming */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cuw-gray-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cuw-gray);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cuw-navy);
 }
 
 .App {
@@ -21,14 +105,16 @@ code {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  background-color: var(--cuw-gray-bg);
 }
 
 .header {
   width: 100% !important;
-  padding: 0 1rem !important;
-  background-color: whitesmoke !important;
-  color: black !important;
+  padding: 0 1.5rem !important;
+  background-color: var(--cuw-navy) !important;
+  color: var(--cuw-white) !important;
+  box-shadow: var(--shadow-md);
 
   display: flex !important;
   flex-direction: row !important;
@@ -36,28 +122,22 @@ code {
   justify-content: space-between !important;
 }
 
-.error {
-  margin: 0.5rem;
-  color: red;
-  text-align: center;
+.header h1 {
+  color: var(--cuw-white);
+  font-family: 'Merriweather', Georgia, serif;
+  font-size: 1.4rem;
+  margin: 0;
 }
 
-/*
-  Extra Small Devices, Phones
-  @media only screen and (min-width: 480px) {}
-*/
+.error {
+  margin: 0.5rem;
+  color: #B71C1C;
+  text-align: center;
+  font-weight: 600;
+}
 
-/*
-  Small Devices, Tablets
-  @media only screen and (min-width: 768px) {}
-*/
-
-/*
-  Medium Devices, Desktops
-  @media only screen and (min-width: 992px) {}
-*/
-
-/*
-  Large Devices, Wide Screens
-  @media only screen and (min-width: 1200px) {}
-*/
+@media only screen and (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+}

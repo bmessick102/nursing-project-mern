@@ -1,0 +1,103 @@
+[
+  {
+    "courseId": "17779462778811smuf44gj",
+    "name": "John Smith",
+    "age": 65,
+    "gender": "Male",
+    "roomNumber": "301",
+    "diagnosis": [
+      "Type 2 Diabetes",
+      "Hypertension"
+    ],
+    "allergies": [
+      "Penicillin"
+    ],
+    "medications": [
+      {
+        "name": "Metformin",
+        "dose": "500mg",
+        "frequency": "Twice daily"
+      },
+      {
+        "name": "Lisinopril",
+        "dose": "10mg",
+        "frequency": "Once daily"
+      }
+    ],
+    "_id": "1777946277891828nh6dik",
+    "createdAt": "2026-05-05T01:57:57.891Z",
+    "updatedAt": "2026-05-09T03:42:13.512Z",
+    "vitals": [],
+    "labs": [],
+    "encounters": [],
+    "nursingNotes": [
+      {
+        "date": "5/8/2026",
+        "time": "11:42 PM",
+        "type": "Assessment",
+        "author": "Current User",
+        "authorRole": "RN",
+        "content": "fnv ekfv bfkv b",
+        "signed": true,
+        "_id": "17782981335129t2na26xg"
+      }
+    ],
+    "marEntries": [],
+    "ioEntries": [],
+    "orders": []
+  },
+  {
+    "courseId": "1777946277890qve9edu4r",
+    "name": "Sarah Johnson",
+    "age": 45,
+    "gender": "Female",
+    "roomNumber": "302",
+    "diagnosis": [
+      "Post-operative appendectomy"
+    ],
+    "allergies": [
+      "NSAID"
+    ],
+    "medications": [
+      {
+        "name": "Cephalexin",
+        "dose": "500mg",
+        "frequency": "Four times daily"
+      },
+      {
+        "name": "Acetaminophen",
+        "dose": "650mg",
+        "frequency": "Every 6 hours as needed"
+      }
+    ],
+    "_id": "1777946277896s53a58v4b",
+    "createdAt": "2026-05-05T01:57:57.896Z",
+    "updatedAt": "2026-05-05T01:57:57.896Z"
+  },
+  {
+    "courseId": "1777946277890ljtd2cloc",
+    "name": "Michael Chen",
+    "age": 8,
+    "gender": "Male",
+    "roomNumber": "201",
+    "diagnosis": [
+      "Acute bronchitis"
+    ],
+    "allergies": [],
+    "medications": [
+      {
+        "name": "Amoxicillin",
+        "dose": "250mg",
+        "frequency": "Three times daily"
+      },
+      {
+        "name": "Albuterol",
+        "dose": "2mg",
+        "frequency": "Every 4-6 hours"
+      }
+    ],
+    "_id": "1777946277896vh3qq5q4b",
+    "createdAt": "2026-05-05T01:57:57.896Z",
+    "updatedAt": "2026-05-05T01:57:57.896Z"
+  }
+]

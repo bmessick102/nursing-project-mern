@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Nursing 2200",
+    "code": "NURS2200",
+    "instructor": "Dr. Clinical Instructor",
+    "description": "Comprehensive nursing fundamentals and clinical practice",
+    "_id": "1777946277890nursing2200id",
+    "createdAt": "2026-05-05T01:57:57.882Z",
+    "updatedAt": "2026-05-05T01:57:57.882Z"
+  },
+  {
+    "name": "Nursing 101",
+    "code": "NURS101",
+    "instructor": "Dr. Sarah Williams",
+    "description": "Introduction to nursing fundamentals and patient care basics",
+    "_id": "1777946277890nursing101id",
+    "createdAt": "2026-05-05T01:57:57.882Z",
+    "updatedAt": "2026-05-05T01:57:57.882Z"
+  },
+  {
+    "name": "Adult Health Nursing",
+    "code": "NURS201",
+    "instructor": "Dr. Jane Smith",
+    "description": "Medical-surgical nursing for adults",
+    "_id": "17779462778811smuf44gj",
+    "createdAt": "2026-05-05T01:57:57.882Z",
+    "updatedAt": "2026-05-05T01:57:57.882Z"
+  },
+  {
+    "name": "Pediatric Nursing",
+    "code": "NURS202",
+    "instructor": "Dr. John Doe",
+    "description": "Nursing care for children and adolescents",
+    "_id": "1777946277890qve9edu4r",
+    "createdAt": "2026-05-05T01:57:57.890Z",
+    "updatedAt": "2026-05-05T01:57:57.890Z"
+  },
+  {
+    "name": "Critical Care Nursing",
+    "code": "NURS301",
+    "instructor": "Dr. Emily Johnson",
+    "description": "Intensive care unit nursing",
+    "_id": "1777946277890ljtd2cloc",
+    "createdAt": "2026-05-05T01:57:57.890Z",
+    "updatedAt": "2026-05-05T01:57:57.890Z"
+  }
+]

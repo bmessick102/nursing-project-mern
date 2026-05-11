@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "npx tsx src/index.ts",
     "build": "rm -rf dist && npx tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "seed": "npx tsx src/seed.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -15,8 +16,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "joi": "^17.13.3",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.15.1"
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

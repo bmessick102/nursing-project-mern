@@ -35,9 +35,9 @@ const Header: React.FC<Props> = () => {
 
   return (
     <AppBar className='header' position='static'>
-      <h1>Web App</h1>
+      <h1>CUW Nursing Charting</h1>
 
-      <IconButton onClick={openPopover}>
+      <IconButton onClick={openPopover} sx={{ color: '#FFFFFF' }}>
         <OnlineIndicator online={isLoggedIn}>
           <Avatar src={account?.username || ''} alt={account?.username || 'Guest'} />
         </OnlineIndicator>

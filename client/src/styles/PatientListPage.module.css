@@ -1,0 +1,200 @@
+.patientContainer {
+  min-height: 100vh;
+  background: #F8F9FA;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.heroBanner {
+  position: relative;
+  color: #FFFFFF;
+  padding: 64px 0 72px;
+  margin-bottom: 32px;
+  border-bottom: 6px solid #FFB81C;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.heroImage {
+  position: absolute;
+  inset: 0;
+  background-image: url('../../public/images/cuw-background.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: -2;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 39, 89, 0.92) 0%,
+    rgba(0, 61, 130, 0.85) 50%,
+    rgba(27, 91, 184, 0.75) 100%
+  );
+  z-index: -1;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.headerContent {
+  flex: 1;
+}
+
+.brandLockup {
+  background: rgba(255, 255, 255, 0.95);
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 4px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.brandLogo {
+  display: block;
+  height: 32px;
+  width: auto;
+}
+
+.eyebrow {
+  font-family: 'Merriweather', Georgia, serif;
+  font-size: 14px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: #FFB81C;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.title {
+  color: #FFFFFF !important;
+  font-family: 'Merriweather', Georgia, serif !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+  letter-spacing: -0.02em !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.courseName {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 16px !important;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.backButton {
+  background-color: #FFFFFF !important;
+  color: #003D82 !important;
+  border: 2px solid #FFFFFF !important;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.backButton:hover {
+  background-color: #FFB81C !important;
+  border-color: #FFB81C !important;
+  color: #002759 !important;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.patientCard {
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border: 1px solid #E5E7EB !important;
+  border-left: 4px solid #B1B3B3 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+.patientCard:hover {
+  box-shadow: 0 6px 20px rgba(0, 61, 130, 0.15) !important;
+  transform: translateY(-3px);
+  border-left-color: #003D82 !important;
+}
+
+.patientCard.selected {
+  border-left-color: #FFB81C !important;
+  background-color: #FFFBF0 !important;
+}
+
+.listButton {
+  text-align: left;
+  width: 100%;
+  padding: 20px !important;
+}
+
+.patientInfo {
+  width: 100%;
+}
+
+.patientName {
+  color: #003D82 !important;
+  font-family: 'Merriweather', Georgia, serif !important;
+  font-weight: 700 !important;
+  margin-bottom: 6px !important;
+  font-size: 1.15rem !important;
+}
+
+.roomInfo {
+  color: #6B7280 !important;
+  margin-bottom: 14px !important;
+  font-size: 0.9rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600 !important;
+}
+
+.diagnoses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.allergies {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.allergiesLabel {
+  font-weight: 700 !important;
+  color: #B71C1C !important;
+  display: block !important;
+  margin-bottom: 8px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.75rem !important;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .heroBanner {
+    padding: 40px 0 48px;
+  }
+}

@@ -28,6 +28,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.5.0",
     "@mui/material": "^6.4.8",
     "axios": "^1.13.1",
     "react": "^19.1.0",
@@ -36,8 +37,10 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@rollup/plugin-babel": "^7.0.0",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
-    "serve": "^14.2.5"
+    "serve": "^14.2.5",
+    "typescript": "^5.0.0"
   }
 }

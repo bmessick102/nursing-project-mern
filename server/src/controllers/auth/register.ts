@@ -2,7 +2,7 @@ import { type RequestHandler } from 'express'
 import joi from '../../utils/joi'
 import jwt from '../../utils/jwt'
 import crypt from '../../utils/crypt'
-import Account from '../../models/Account'
+import Account from '../../models/FileBasedAccount'
 
 const register: RequestHandler = async (req, res, next) => {
   try {
@@ -21,7 +21,7 @@ const register: RequestHandler = async (req, res, next) => {
     const { username, password } = req.body
 
     // Verify account username as unique
-    const found = await Account.findOne({ username })
+    const found = Account.findOne({ username })
 
     if (found) {
       return next({
@@ -31,17 +31,16 @@ const register: RequestHandler = async (req, res, next) => {
     }
 
     // Encrypt password
-    const hash = crypt.hash(password)
+    const hash = await crypt.hash(password)
 
     // Create account
-    const account = new Account({ username, password: hash })
-    await account.save()
+    const account = Account.create({ username, password: hash, role: 'user' })
 
     // Generate access token
     const token = jwt.signToken({ uid: account._id, role: account.role })
 
     // Exclude password from response
-    const { password: _, ...data } = account.toObject()
+    const { password: _, ...data } = account
 
     res.status(201).json({
       message: 'Succesfully registered',

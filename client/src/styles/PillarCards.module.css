@@ -1,0 +1,100 @@
+.pillarSection {
+  position: relative;
+  z-index: 10;
+  margin-top: 32px;
+  width: 100%;
+  max-width: 880px;
+}
+
+.pillarHeader {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #FFFFFF;
+}
+
+.pillarEyebrow {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #FFB81C;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.pillarTitle {
+  font-family: 'Merriweather', Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+}
+
+.pillarSubtitle {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  margin: 0;
+}
+
+.pillarGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.pillarCard {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 3px solid #FFB81C;
+  border-radius: 4px;
+  padding: 24px 20px;
+  text-align: center;
+  color: #FFFFFF;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(6px);
+}
+
+.pillarCard:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.pillarIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #FFB81C 0%, #E0A116 100%);
+  color: #002759;
+  border-radius: 50%;
+  margin-bottom: 14px;
+}
+
+.pillarCardTitle {
+  font-family: 'Merriweather', Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+}
+
+.pillarCardText {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .pillarGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pillarSection {
+    margin-top: 24px;
+  }
+}

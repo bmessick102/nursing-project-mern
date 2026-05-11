@@ -2,7 +2,7 @@ import { type RequestHandler } from 'express'
 import joi from '../../utils/joi'
 import jwt from '../../utils/jwt'
 import crypt from '../../utils/crypt'
-import Account from '../../models/Account'
+import Account from '../../models/FileBasedAccount'
 
 const login: RequestHandler = async (req, res, next) => {
   try {
@@ -21,7 +21,7 @@ const login: RequestHandler = async (req, res, next) => {
     const { username, password } = req.body
 
     // Get account from DB, and verify existance
-    const account = await Account.findOne({ username })
+    const account = Account.findOne({ username })
 
     if (!account) {
       return next({
@@ -31,7 +31,7 @@ const login: RequestHandler = async (req, res, next) => {
     }
 
     // Verify password hash
-    const passOk = crypt.validate(password, account.password)
+    const passOk = await crypt.validate(password, account.password)
 
     if (!passOk) {
       return next({
@@ -44,7 +44,7 @@ const login: RequestHandler = async (req, res, next) => {
     const token = jwt.signToken({ uid: account._id, role: account.role })
 
     // Remove password from response data
-    const { password: _, ...accountData } = account.toObject()
+    const { password: _, ...accountData } = account
 
     res.status(200).json({
       message: 'Succesfully logged-in',

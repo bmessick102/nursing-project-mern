@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "1777947127325clb2h17s1",
+    "username": "student1",
+    "password": "$2b$10$PFN1LwwV27Pjyk.TPMmuFO.OV07XXg9k1XB43NoSdAI1KMzUmfmb6",
+    "role": "user",
+    "createdAt": "2026-05-05T02:12:07.325Z",
+    "updatedAt": "2026-05-05T02:12:07.326Z"
+  },
+  {
+    "_id": "177794712738952cv3z8ed",
+    "username": "nurse_test",
+    "password": "$2b$10$1engmdilT30o.P16tMM27e3XQD40yTgZmwTrYims/rmk6MVZpivEe",
+    "role": "user",
+    "createdAt": "2026-05-05T02:12:07.389Z",
+    "updatedAt": "2026-05-05T02:12:07.389Z"
+  },
+  {
+    "_id": "1777947127452n8k2sf4g4",
+    "username": "instructor",
+    "password": "$2b$10$urCbcjgS.EaxHvLFNgQEYOemzdsANrwX7DqZfxzHScWc87JRUxiYe",
+    "role": "admin",
+    "createdAt": "2026-05-05T02:12:07.452Z",
+    "updatedAt": "2026-05-05T02:12:07.452Z"
+  }
+]

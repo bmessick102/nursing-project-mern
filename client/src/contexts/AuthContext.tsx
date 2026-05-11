@@ -29,7 +29,7 @@ export const useAuth = () => useContext(AuthContext)
 
 // export the provider
 export const AuthProvider = ({ children }: PropsWithChildren) => {
-  const [token, setToken] = useState(localStorage.getItem('token') || initContext.token)
+  const [token, setToken] = useState<string | null>(null)
   const [account, setAccount] = useState(initContext.account)
   const [isLoggedIn, setIsLoggedIn] = useState(initContext.isLoggedIn)
 
@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     setIsLoggedIn(false)
     setAccount(null)
     setToken(null)
+    localStorage.removeItem('token')
   }
 
   const loginWithToken = async () => {
@@ -90,8 +91,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
   }
 
-  // This side effect keeps local storage updated with recent token value,
-  // making sure it can be re-used upon refresh or re-open browser
+  // This side effect keeps local storage updated with recent token value
   useEffect(() => {
     if (token) {
       localStorage.setItem('token', token)

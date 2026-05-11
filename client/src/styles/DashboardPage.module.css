@@ -1,0 +1,214 @@
+.dashboardContainer {
+  min-height: 100vh;
+  background: #F8F9FA;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+.topBar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 4px;
+  background: linear-gradient(90deg, #003D82 0%, #003D82 60%, #FFB81C 60%, #FFB81C 100%);
+}
+
+.topBarInner {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 24px;
+  padding: 16px 24px !important;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.brandLogo {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+
+.patientInfo {
+  flex: 1;
+  min-width: 0;
+  border-left: 4px solid #FFB81C;
+  padding-left: 18px;
+}
+
+.patientEyebrow {
+  display: block;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #FFB81C;
+  margin-bottom: 2px;
+}
+
+.patientName {
+  color: #003D82 !important;
+  font-family: 'Merriweather', Georgia, serif !important;
+  font-weight: 700 !important;
+  margin-bottom: 2px !important;
+  font-size: 1.25rem !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.2 !important;
+}
+
+.patientDetails {
+  color: #4A4A4A !important;
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600 !important;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.actionButton {
+  background-color: #FFFFFF !important;
+  color: #003D82 !important;
+  border: 2px solid #003D82 !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.06em !important;
+}
+
+.actionButton:hover {
+  background-color: #003D82 !important;
+  color: #FFFFFF !important;
+}
+
+.actionButtonPrimary {
+  background-color: #003D82 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #003D82 !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.06em !important;
+}
+
+.actionButtonPrimary:hover {
+  background-color: #FFB81C !important;
+  border-color: #FFB81C !important;
+  color: #002759 !important;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0 0 0;
+  font-size: 12px;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.breadcrumbItem {
+  color: #6B7280;
+}
+
+.breadcrumbCurrent {
+  color: #003D82;
+  font-weight: 700;
+}
+
+.mainContent {
+  margin-top: 16px;
+  flex: 1;
+}
+
+.tabsContainer {
+  background: #FFFFFF !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #E5E7EB !important;
+  border-top: 3px solid #003D82 !important;
+}
+
+.tabs {
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.tabs :global(.MuiTab-root) {
+  text-transform: uppercase;
+  font-weight: 700;
+  font-family: 'Open Sans', sans-serif;
+  color: #6B7280;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  transition: all 0.2s ease;
+  min-height: 56px;
+}
+
+.tabs :global(.MuiTab-root:hover) {
+  color: #003D82;
+  background-color: rgba(0, 61, 130, 0.04);
+}
+
+.tabs :global(.MuiTab-root.Mui-selected) {
+  color: #003D82;
+  font-weight: 800;
+}
+
+.tabs :global(.MuiTabs-indicator) {
+  background-color: #FFB81C;
+  height: 3px;
+}
+
+.tabContent {
+  margin-top: 24px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .topBarInner {
+    flex-direction: column !important;
+    gap: 16px !important;
+    align-items: flex-start !important;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .patientInfo {
+    width: 100%;
+  }
+}
