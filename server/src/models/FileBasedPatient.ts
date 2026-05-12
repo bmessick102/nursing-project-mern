@@ -1,6 +1,32 @@
 import fileDb from '../utils/fileDb'
 
-export interface VitalSigns {
+export interface Modification {
+  modifiedAt: string
+  modifiedBy: string
+  reason?: string
+  previousSnapshot: Record<string, unknown>
+}
+
+export interface Addendum {
+  _id: string
+  timestamp: string
+  author: string
+  authorRole?: string
+  content: string
+}
+
+export interface Auditable {
+  lastModifiedAt?: string
+  lastModifiedBy?: string
+  modifications?: Modification[]
+  markedInError?: boolean
+  markedInErrorReason?: string
+  markedInErrorBy?: string
+  markedInErrorAt?: string
+  addenda?: Addendum[]
+}
+
+export interface VitalSigns extends Auditable {
   _id: string
   timestamp: string
   temp: number
@@ -15,7 +41,7 @@ export interface VitalSigns {
   documentedBy: string
 }
 
-export interface LabResult {
+export interface LabResult extends Auditable {
   _id: string
   category: string
   name: string
@@ -26,7 +52,7 @@ export interface LabResult {
   flag?: 'H' | 'L' | 'C'
 }
 
-export interface Encounter {
+export interface Encounter extends Auditable {
   _id: string
   date: string
   type: string
@@ -39,7 +65,7 @@ export interface Encounter {
   plan?: string
 }
 
-export interface NursingNote {
+export interface NursingNote extends Auditable {
   _id: string
   date: string
   time: string
@@ -50,22 +76,25 @@ export interface NursingNote {
   signed: boolean
 }
 
-export interface MAREntry {
+export interface MARAdministration extends Auditable {
+  _id?: string
+  scheduledTime: string
+  status: 'given' | 'due' | 'overdue' | 'held'
+  givenAt?: string
+  givenBy?: string
+}
+
+export interface MAREntry extends Auditable {
   _id: string
   medicationName: string
   dose: string
   route: string
   frequency: string
   scheduledTimes: string[]
-  administrations: Array<{
-    scheduledTime: string
-    status: 'given' | 'due' | 'overdue' | 'held'
-    givenAt?: string
-    givenBy?: string
-  }>
+  administrations: MARAdministration[]
 }
 
-export interface IOEntry {
+export interface IOEntry extends Auditable {
   _id: string
   timestamp: string
   type: 'intake' | 'output'
@@ -75,7 +104,7 @@ export interface IOEntry {
   documentedBy: string
 }
 
-export interface Order {
+export interface Order extends Auditable {
   _id: string
   type: 'medication' | 'diet' | 'lab' | 'nursing' | 'therapy'
   name: string
@@ -84,6 +113,42 @@ export interface Order {
   orderedBy: string
   date: string
   priority?: 'routine' | 'stat' | 'urgent'
+}
+
+export type AssessmentSystem =
+  | 'neuro'
+  | 'cardiac'
+  | 'respiratory'
+  | 'gi'
+  | 'gu'
+  | 'skin'
+  | 'pain'
+  | 'musculoskeletal'
+  | 'psychosocial'
+
+export interface NursingAssessment extends Auditable {
+  _id: string
+  timestamp: string
+  system: AssessmentSystem
+  wdl: boolean
+  findings: Record<string, string | boolean | number>
+  narrative?: string
+  documentedBy: string
+  signed: boolean
+}
+
+export interface BradenScore extends Auditable {
+  _id: string
+  timestamp: string
+  sensoryPerception: number
+  moisture: number
+  activity: number
+  mobility: number
+  nutrition: number
+  frictionShear: number
+  total: number
+  riskLevel: 'no risk' | 'mild' | 'moderate' | 'high' | 'severe'
+  documentedBy: string
 }
 
 export interface Patient {
@@ -107,6 +172,8 @@ export interface Patient {
   marEntries: MAREntry[]
   ioEntries: IOEntry[]
   orders: Order[]
+  assessments: NursingAssessment[]
+  bradenScores: BradenScore[]
   dischargeSummary?: {
     anticipatedDate: string
     condition: string
@@ -128,6 +195,8 @@ const normalizePatient = (patient: any): Patient => {
     marEntries: patient.marEntries || [],
     ioEntries: patient.ioEntries || [],
     orders: patient.orders || [],
+    assessments: patient.assessments || [],
+    bradenScores: patient.bradenScores || [],
   }
 }
 
@@ -157,6 +226,8 @@ const create = (data: Omit<Patient, '_id' | 'createdAt' | 'updatedAt'>) => {
     marEntries: [],
     ioEntries: [],
     orders: [],
+    assessments: [],
+    bradenScores: [],
     ...data,
     _id: fileDb.generateId(),
     createdAt: new Date().toISOString(),
@@ -503,6 +574,69 @@ const initializeDefaultPatients = () => {
             orderedBy: 'Dietician Susan Lee',
             date: new Date(baseDate.getTime()).toISOString(),
             priority: 'routine',
+          },
+        ],
+        assessments: [
+          {
+            _id: fileDb.generateId(),
+            timestamp: new Date(baseDate.getTime() + 12 * 60 * 60 * 1000).toISOString(),
+            system: 'neuro',
+            wdl: true,
+            findings: {
+              loc: 'Alert',
+              orientation: 'x4',
+              pupils: 'PERRLA',
+              speech: 'Clear',
+              motorStrength: '5/5 all extremities',
+            },
+            narrative: 'A&Ox4. Follows commands appropriately. No focal deficits.',
+            documentedBy: 'RN Sarah',
+            signed: true,
+          },
+          {
+            _id: fileDb.generateId(),
+            timestamp: new Date(baseDate.getTime() + 12 * 60 * 60 * 1000).toISOString(),
+            system: 'cardiac',
+            wdl: false,
+            findings: {
+              rhythm: 'Regular',
+              s1s2: 'Normal',
+              edema: '1+ bilateral lower extremities',
+              capRefill: '<3 seconds',
+              pulses: '2+ all peripheral',
+            },
+            narrative: 'Mild pitting edema noted to bilateral ankles. Patient denies SOB at rest.',
+            documentedBy: 'RN Sarah',
+            signed: true,
+          },
+          {
+            _id: fileDb.generateId(),
+            timestamp: new Date(baseDate.getTime() + 12 * 60 * 60 * 1000).toISOString(),
+            system: 'respiratory',
+            wdl: true,
+            findings: {
+              breathSounds: 'Clear all lobes',
+              effort: 'Unlabored',
+              cough: 'None',
+              oxygenSupport: 'Room air',
+            },
+            documentedBy: 'RN Sarah',
+            signed: true,
+          },
+        ],
+        bradenScores: [
+          {
+            _id: fileDb.generateId(),
+            timestamp: new Date(baseDate.getTime() + 12 * 60 * 60 * 1000).toISOString(),
+            sensoryPerception: 4,
+            moisture: 4,
+            activity: 3,
+            mobility: 3,
+            nutrition: 3,
+            frictionShear: 3,
+            total: 20,
+            riskLevel: 'no risk',
+            documentedBy: 'RN Sarah',
           },
         ],
         dischargeSummary: {

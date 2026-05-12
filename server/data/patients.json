@@ -26,8 +26,23 @@
     ],
     "_id": "1777946277891828nh6dik",
     "createdAt": "2026-05-05T01:57:57.891Z",
-    "updatedAt": "2026-05-09T03:42:13.512Z",
-    "vitals": [],
+    "updatedAt": "2026-05-12T02:47:25.664Z",
+    "vitals": [
+      {
+        "timestamp": "2026-05-12T02:47:25.624Z",
+        "temp": 98.6,
+        "tempSource": "Oral",
+        "systolic": 120,
+        "diastolic": 80,
+        "heartRate": 70,
+        "respiratoryRate": 16,
+        "spo2": 98,
+        "painScore": 0,
+        "position": "Sitting",
+        "documentedBy": "Current User",
+        "_id": "1778554045664jsdpomfmu"
+      }
+    ],
     "labs": [],
     "encounters": [],
     "nursingNotes": [
@@ -44,7 +59,75 @@
     ],
     "marEntries": [],
     "ioEntries": [],
-    "orders": []
+    "orders": [],
+    "assessments": [
+      {
+        "_id": "aae9249e6212251e863a3f8a",
+        "timestamp": "2026-05-11T14:53:15.978Z",
+        "system": "neuro",
+        "wdl": true,
+        "findings": {
+          "loc": "Alert",
+          "orientation": "x4 (person/place/time/situation)",
+          "pupils": "PERRLA",
+          "speech": "Clear",
+          "motorStrength": "5/5 all extremities",
+          "sensation": "Intact"
+        },
+        "narrative": "A&Ox4. Follows commands appropriately. No focal deficits.",
+        "documentedBy": "RN Sarah",
+        "signed": true
+      },
+      {
+        "_id": "ceedd07b43d7cd8f38b8466a",
+        "timestamp": "2026-05-11T14:53:15.978Z",
+        "system": "cardiac",
+        "wdl": false,
+        "findings": {
+          "rhythm": "Regular",
+          "s1s2": "Normal S1/S2",
+          "edema": "1+ trace",
+          "edemaLocation": "Bilateral LE",
+          "capRefill": "<3 seconds",
+          "pulses": "2+ all peripheral",
+          "chestPain": "Denies"
+        },
+        "narrative": "Mild pitting edema noted to bilateral ankles. Patient denies SOB at rest.",
+        "documentedBy": "RN Sarah",
+        "signed": true
+      },
+      {
+        "_id": "6e1116a645f4b0116c87565f",
+        "timestamp": "2026-05-11T14:53:15.978Z",
+        "system": "respiratory",
+        "wdl": true,
+        "findings": {
+          "breathSounds": "Clear all lobes",
+          "effort": "Unlabored",
+          "cough": "None",
+          "sputumColor": "N/A",
+          "oxygenSupport": "Room air",
+          "chestExpansion": "Symmetrical"
+        },
+        "documentedBy": "RN Sarah",
+        "signed": true
+      }
+    ],
+    "bradenScores": [
+      {
+        "_id": "bc3f3e939bef4cf033db7109",
+        "timestamp": "2026-05-11T14:53:15.978Z",
+        "sensoryPerception": 4,
+        "moisture": 4,
+        "activity": 3,
+        "mobility": 3,
+        "nutrition": 3,
+        "frictionShear": 3,
+        "total": 20,
+        "riskLevel": "no risk",
+        "documentedBy": "RN Sarah"
+      }
+    ]
   },
   {
     "courseId": "1777946277890qve9edu4r",
@@ -72,7 +155,9 @@
     ],
     "_id": "1777946277896s53a58v4b",
     "createdAt": "2026-05-05T01:57:57.896Z",
-    "updatedAt": "2026-05-05T01:57:57.896Z"
+    "updatedAt": "2026-05-05T01:57:57.896Z",
+    "assessments": [],
+    "bradenScores": []
   },
   {
     "courseId": "1777946277890ljtd2cloc",
@@ -98,6 +183,8 @@
     ],
     "_id": "1777946277896vh3qq5q4b",
     "createdAt": "2026-05-05T01:57:57.896Z",
-    "updatedAt": "2026-05-05T01:57:57.896Z"
+    "updatedAt": "2026-05-05T01:57:57.896Z",
+    "assessments": [],
+    "bradenScores": []
   }
 ]

@@ -22,54 +22,113 @@ import {
   CircularProgress,
 } from '@mui/material'
 import type { Patient, IOEntry } from '@types'
+import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
+import { useCurrentUser } from 'hooks/useCurrentUser'
+import EditMenu from 'components/edit/EditMenu'
+import MarkInErrorDialog from 'components/edit/MarkInErrorDialog'
+import ModificationHistory from 'components/edit/ModificationHistory'
+import InErrorBanner, { inErrorRowSx } from 'components/edit/InErrorBanner'
+import { Stack } from '@mui/material'
+import TabHeader from 'components/common/TabHeader'
+import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
 interface IOTabProps {
   patient: Patient | null
 }
 
+const blankForm = () => ({
+  type: 'intake' as 'intake' | 'output',
+  category: 'Oral',
+  amount: '',
+  unit: 'mL',
+})
+
 const IOTab: React.FC<IOTabProps> = ({ patient }) => {
+  const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
+  const { username } = useCurrentUser()
   const [tabValue, setTabValue] = useState(0)
-  const [form, setForm] = useState({
-    type: 'intake' as 'intake' | 'output',
-    category: 'Oral',
-    amount: '',
-    unit: 'mL',
-  })
-  const { addIO, loading } = useChartingApi()
+  const [form, setForm] = useState(blankForm())
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editReason, setEditReason] = useState('')
+  const [markInErrorFor, setMarkInErrorFor] = useState<IOEntry | null>(null)
+  const [historyFor, setHistoryFor] = useState<IOEntry | null>(null)
+  const { addIO, editResource, markResourceInError, loading } = useChartingApi()
 
   if (!patient) {
-    return (
-      <Paper className={styles.section}>
-        <Box className={styles.emptyState}>
-          <Typography>No patient selected</Typography>
-        </Box>
-      </Paper>
-    )
+    return <EmptyState message="No patient selected" />
   }
 
   const ioEntries = patient?.ioEntries || []
   const intakeCategories = ['Oral', 'IV', 'Tube Feeding', 'Other']
   const outputCategories = ['Urine', 'Stool', 'Vomitus', 'Drainage', 'Other']
 
+  const startEdit = (io: IOEntry) => {
+    setEditingId(io._id)
+    setForm({
+      type: io.type,
+      category: io.category,
+      amount: String(io.amount),
+      unit: io.unit,
+    })
+    setEditReason('')
+    setTabValue(1)
+  }
+
   const handleSubmit = async () => {
     if (!form.amount) return
 
     try {
-      const io: Omit<IOEntry, '_id'> = {
-        timestamp: new Date().toISOString(),
-        type: form.type,
-        category: form.category,
-        amount: parseInt(form.amount),
-        unit: form.unit,
-        documentedBy: 'Current User',
+      if (editingId) {
+        const updated = await editResource(
+          patient._id,
+          'io',
+          editingId,
+          {
+            type: form.type,
+            category: form.category,
+            amount: parseInt(form.amount),
+            unit: form.unit,
+          },
+          editReason || undefined,
+        )
+        setSelectedPatient(updated)
+      } else {
+        const io: Omit<IOEntry, '_id'> = {
+          timestamp: new Date().toISOString(),
+          type: form.type,
+          category: form.category,
+          amount: parseInt(form.amount),
+          unit: form.unit,
+          documentedBy: username,
+        }
+        const updated = await addIO(patient._id, io)
+        setSelectedPatient(updated)
       }
-      await addIO(patient._id, io)
-      setForm({ type: 'intake', category: 'Oral', amount: '', unit: 'mL' })
+      setForm(blankForm())
+      setEditingId(null)
+      setEditReason('')
       setTabValue(0)
     } catch (err) {
-      console.error('Failed to add I/O entry', err)
+      console.error('Failed to save I/O entry', err)
+    }
+  }
+
+  const handleMarkInErrorSubmit = async (reason: string) => {
+    if (!markInErrorFor) return
+    try {
+      const updated = await markResourceInError(
+        patient._id,
+        'io',
+        markInErrorFor._id,
+        reason,
+        username,
+      )
+      setSelectedPatient(updated)
+      setMarkInErrorFor(null)
+    } catch (err) {
+      console.error('Failed to mark in error', err)
     }
   }
 
@@ -80,12 +139,19 @@ const IOTab: React.FC<IOTabProps> = ({ patient }) => {
   const balance = totalIntake - totalOutput
 
   return (
-    <Paper className={styles.section}>
-      <Typography variant="h6" className={styles.sectionTitle}>
-        Intake & Output
-      </Typography>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+    <>
+      <TabHeader
+        title="Intake & Output"
+        actionLabel="Log I/O"
+        onAction={() => {
+          setEditingId(null)
+          setForm(blankForm())
+          setEditReason('')
+          setTabValue(1)
+        }}
+      />
+      <Paper className={styles.section}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)}>
           <Tab label="View" />
           <Tab label="Document" />
@@ -143,10 +209,25 @@ const IOTab: React.FC<IOTabProps> = ({ patient }) => {
                   </TableHead>
                   <TableBody>
                     {[...intakes].reverse().map((io) => (
-                      <TableRow key={io._id}>
-                        <TableCell>{new Date(io.timestamp).toLocaleTimeString()}</TableCell>
+                      <TableRow key={io._id} sx={inErrorRowSx(io.markedInError)}>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {new Date(io.timestamp).toLocaleTimeString()}
+                            {io.markedInError && <InErrorBanner entry={io} compact />}
+                          </Stack>
+                        </TableCell>
                         <TableCell>{io.category}</TableCell>
-                        <TableCell>{io.amount} mL</TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                            <span>{io.amount} {io.unit || 'mL'}</span>
+                            <EditMenu
+                              entry={io}
+                              onEdit={() => startEdit(io)}
+                              onMarkInError={() => setMarkInErrorFor(io)}
+                              onViewHistory={() => setHistoryFor(io)}
+                            />
+                          </Stack>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -169,10 +250,25 @@ const IOTab: React.FC<IOTabProps> = ({ patient }) => {
                   </TableHead>
                   <TableBody>
                     {[...outputs].reverse().map((io) => (
-                      <TableRow key={io._id}>
-                        <TableCell>{new Date(io.timestamp).toLocaleTimeString()}</TableCell>
+                      <TableRow key={io._id} sx={inErrorRowSx(io.markedInError)}>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {new Date(io.timestamp).toLocaleTimeString()}
+                            {io.markedInError && <InErrorBanner entry={io} compact />}
+                          </Stack>
+                        </TableCell>
                         <TableCell>{io.category}</TableCell>
-                        <TableCell>{io.amount} mL</TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                            <span>{io.amount} {io.unit || 'mL'}</span>
+                            <EditMenu
+                              entry={io}
+                              onEdit={() => startEdit(io)}
+                              onMarkInError={() => setMarkInErrorFor(io)}
+                              onViewHistory={() => setHistoryFor(io)}
+                            />
+                          </Stack>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -237,19 +333,61 @@ const IOTab: React.FC<IOTabProps> = ({ patient }) => {
             </Select>
           </Grid>
 
+          {editingId && (
+            <Grid item xs={12}>
+              <TextField
+                label="Reason for edit (optional)"
+                fullWidth
+                size="small"
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+              />
+            </Grid>
+          )}
+
           <Grid item xs={12}>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={loading || !form.amount}
-              sx={{ backgroundColor: '#003D82' }}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Log I/O'}
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={loading || !form.amount}
+                sx={{ backgroundColor: '#003D82' }}
+              >
+                {loading ? <CircularProgress size={20} /> : editingId ? 'Save Changes' : 'Log I/O'}
+              </Button>
+              {editingId && (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setEditingId(null)
+                    setForm(blankForm())
+                    setEditReason('')
+                    setTabValue(0)
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </Stack>
           </Grid>
         </Grid>
       )}
-    </Paper>
+
+      <MarkInErrorDialog
+        open={markInErrorFor !== null}
+        onClose={() => setMarkInErrorFor(null)}
+        onSubmit={handleMarkInErrorSubmit}
+        entityLabel="I/O entry"
+        loading={loading}
+      />
+      <ModificationHistory
+        open={historyFor !== null}
+        onClose={() => setHistoryFor(null)}
+        entry={historyFor}
+        entityLabel="I/O entry"
+      />
+      </Paper>
+    </>
   )
 }
 

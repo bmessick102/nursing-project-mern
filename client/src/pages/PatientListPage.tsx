@@ -10,7 +10,11 @@ import {
   Chip,
   Button,
   Grid,
+  TextField,
+  InputAdornment,
+  Stack,
 } from '@mui/material'
+import { Search } from '@mui/icons-material'
 import type { Patient } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useAppStore } from 'store/useAppStore'
@@ -29,6 +33,8 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
 }) => {
   const { fetchPatientsByCourse, loading, error } = useChartingApi()
   const [patients, setPatients] = useState<Patient[]>([])
+  const [query, setQuery] = useState('')
+  const [allergiesOnly, setAllergiesOnly] = useState(false)
   const { selectedCourse, selectedPatient, setSelectedPatient } = useAppStore()
 
   useEffect(() => {
@@ -50,6 +56,23 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
     setSelectedPatient(patient)
     onPatientSelected()
   }
+
+  const normalizedQuery = query.trim().toLowerCase()
+  const filteredPatients = patients.filter((patient) => {
+    if (allergiesOnly && (!patient.allergies || patient.allergies.length === 0)) {
+      return false
+    }
+    if (!normalizedQuery) return true
+    const haystack = [
+      patient.name,
+      patient.roomNumber,
+      ...(patient.diagnosis || []),
+      ...(patient.allergies || []),
+    ]
+      .join(' ')
+      .toLowerCase()
+    return haystack.includes(normalizedQuery)
+  })
 
   return (
     <Box className={styles.patientContainer}>
@@ -91,15 +114,46 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
       <Container maxWidth="md">
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+        {patients.length > 0 && (
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ my: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Search by name, room, or diagnosis…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Chip
+              label="Allergies only"
+              clickable
+              color={allergiesOnly ? 'primary' : 'default'}
+              variant={allergiesOnly ? 'filled' : 'outlined'}
+              onClick={() => setAllergiesOnly((v) => !v)}
+            />
+            <Typography variant="caption" sx={{ color: '#666', whiteSpace: 'nowrap' }}>
+              {filteredPatients.length} / {patients.length}
+            </Typography>
+          </Stack>
+        )}
+
         {loading ? (
           <Box className={styles.loadingContainer}>
             <CircularProgress />
           </Box>
         ) : patients.length === 0 ? (
           <Alert severity="info">No patients available for this course</Alert>
+        ) : filteredPatients.length === 0 ? (
+          <Alert severity="warning">No patients match the current filter.</Alert>
         ) : (
           <Grid container spacing={2}>
-            {patients.map((patient) => (
+            {filteredPatients.map((patient) => (
               <Grid item xs={12} md={6} key={patient._id}>
                 <Paper
                   className={`${styles.patientCard} ${

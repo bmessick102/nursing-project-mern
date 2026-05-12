@@ -12,36 +12,77 @@ import {
   TableHead,
   TableRow,
   Chip,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  Grid,
+  CircularProgress,
+  IconButton,
 } from '@mui/material'
-import type { Patient } from '@types'
+import { Add, Delete, Edit as EditIcon } from '@mui/icons-material'
+import type { Patient, Order } from '@types'
+import { useAppStore } from 'store/useAppStore'
+import { useChartingApi } from 'hooks/useChartingApi'
+import { useCurrentUser } from 'hooks/useCurrentUser'
+import EditMenu from 'components/edit/EditMenu'
+import MarkInErrorDialog from 'components/edit/MarkInErrorDialog'
+import ModificationHistory from 'components/edit/ModificationHistory'
+import InErrorBanner, { inErrorRowSx } from 'components/edit/InErrorBanner'
+import TabHeader from 'components/common/TabHeader'
+import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
 interface OrdersTabProps {
   patient: Patient | null
 }
 
+type OrderTypeKey = Order['type']
+
+const TAB_LABELS = ['Medications', 'Diet', 'Labs', 'Nursing', 'Therapies', 'Discharge Summary']
+const TAB_ORDER_TYPES: OrderTypeKey[] = ['medication', 'diet', 'lab', 'nursing', 'therapy']
+const DISCHARGE_TAB_INDEX = 5
+
+const blankForm = () => ({
+  name: '',
+  details: '',
+  status: 'active' as Order['status'],
+  priority: 'routine' as NonNullable<Order['priority']>,
+  orderedBy: '',
+})
+
+const blankDischarge = () => ({
+  anticipatedDate: new Date().toISOString().slice(0, 10),
+  condition: '',
+  instructions: [] as string[],
+})
+
+const capitalize = (s: string) => (s.length === 0 ? s : s[0].toUpperCase() + s.slice(1))
+
 const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
+  const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
+  const { username } = useCurrentUser()
+  const { addOrder, editResource, markResourceInError, updatePatientFields, loading } =
+    useChartingApi()
   const [tabValue, setTabValue] = useState(0)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [form, setForm] = useState(blankForm())
+  const [editReason, setEditReason] = useState('')
+  const [markInErrorFor, setMarkInErrorFor] = useState<Order | null>(null)
+  const [historyFor, setHistoryFor] = useState<Order | null>(null)
+  const [dischargeOpen, setDischargeOpen] = useState(false)
+  const [dischargeForm, setDischargeForm] = useState(blankDischarge())
+  const [instructionDraft, setInstructionDraft] = useState('')
 
   if (!patient) {
-    return (
-      <Paper className={styles.section}>
-        <Box className={styles.emptyState}>
-          <Typography>No patient selected</Typography>
-        </Box>
-      </Paper>
-    )
+    return <EmptyState message="No patient selected" />
   }
-
-  const tabs = ['Medications', 'Diet', 'Labs', 'Nursing', 'Therapies', 'Discharge Summary']
-  const tabTypes: Array<'medication' | 'diet' | 'lab' | 'nursing' | 'therapy' | 'discharge'> = [
-    'medication',
-    'diet',
-    'lab',
-    'nursing',
-    'therapy',
-    'discharge',
-  ]
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -67,121 +108,592 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
     }
   }
 
-  const orders = patient?.orders || []
+  const orders = patient.orders || []
 
-  if (tabValue === 5) {
-    // Discharge Summary
+  const startEdit = (order: Order) => {
+    setEditingOrder(order)
+    setForm({
+      name: order.name,
+      details: order.details,
+      status: order.status,
+      priority: order.priority || 'routine',
+      orderedBy: order.orderedBy,
+    })
+    setEditReason('')
+  }
+
+  const startAdd = () => {
+    setForm({ ...blankForm(), orderedBy: username })
+    setAddOpen(true)
+  }
+
+  const startEditDischarge = () => {
+    if (patient.dischargeSummary) {
+      setDischargeForm({
+        anticipatedDate: new Date(patient.dischargeSummary.anticipatedDate)
+          .toISOString()
+          .slice(0, 10),
+        condition: patient.dischargeSummary.condition,
+        instructions: [...patient.dischargeSummary.instructions],
+      })
+    } else {
+      setDischargeForm(blankDischarge())
+    }
+    setInstructionDraft('')
+    setDischargeOpen(true)
+  }
+
+  const handleAddInstruction = () => {
+    const v = instructionDraft.trim()
+    if (!v) return
+    setDischargeForm({
+      ...dischargeForm,
+      instructions: [...dischargeForm.instructions, v],
+    })
+    setInstructionDraft('')
+  }
+
+  const handleRemoveInstruction = (idx: number) => {
+    setDischargeForm({
+      ...dischargeForm,
+      instructions: dischargeForm.instructions.filter((_, i) => i !== idx),
+    })
+  }
+
+  const handleDischargeSubmit = async () => {
+    if (!dischargeForm.condition.trim()) return
+    try {
+      const updated = await updatePatientFields(patient._id, {
+        dischargeSummary: {
+          anticipatedDate: new Date(dischargeForm.anticipatedDate).toISOString(),
+          condition: dischargeForm.condition.trim(),
+          instructions: dischargeForm.instructions,
+        },
+      })
+      setSelectedPatient(updated)
+      setDischargeOpen(false)
+    } catch (err) {
+      console.error('Failed to save discharge summary', err)
+    }
+  }
+
+  const handleAddSubmit = async () => {
+    if (!form.name.trim()) return
+    const typeForTab = tabValue < TAB_ORDER_TYPES.length ? TAB_ORDER_TYPES[tabValue] : 'medication'
+    try {
+      const payload: Omit<Order, '_id'> = {
+        type: typeForTab,
+        name: form.name.trim(),
+        details: form.details.trim(),
+        status: form.status,
+        priority: form.priority,
+        orderedBy: form.orderedBy.trim() || username,
+        date: new Date().toISOString(),
+      }
+      const updated = await addOrder(patient._id, payload)
+      setSelectedPatient(updated)
+      setAddOpen(false)
+    } catch (err) {
+      console.error('Failed to add order', err)
+    }
+  }
+
+  const handleEditSubmit = async () => {
+    if (!editingOrder) return
+    try {
+      const updated = await editResource(
+        patient._id,
+        'orders',
+        editingOrder._id,
+        {
+          name: form.name.trim(),
+          details: form.details.trim(),
+          status: form.status,
+          priority: form.priority,
+          orderedBy: form.orderedBy.trim() || username,
+        },
+        editReason || undefined,
+      )
+      setSelectedPatient(updated)
+      setEditingOrder(null)
+      setEditReason('')
+    } catch (err) {
+      console.error('Failed to edit order', err)
+    }
+  }
+
+  const handleMarkInErrorSubmit = async (reason: string) => {
+    if (!markInErrorFor) return
+    try {
+      const updated = await markResourceInError(
+        patient._id,
+        'orders',
+        markInErrorFor._id,
+        reason,
+        username,
+      )
+      setSelectedPatient(updated)
+      setMarkInErrorFor(null)
+    } catch (err) {
+      console.error('Failed to mark in error', err)
+    }
+  }
+
+  const subtabsBar = (
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+      <Tabs
+        value={tabValue}
+        onChange={(_, val) => setTabValue(val)}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        {TAB_LABELS.map((tab) => (
+          <Tab key={tab} label={tab} />
+        ))}
+      </Tabs>
+    </Box>
+  )
+
+  const editingDialogTitleType =
+    tabValue < TAB_ORDER_TYPES.length ? TAB_LABELS[tabValue].replace(/s$/, '') : ''
+
+  if (tabValue === DISCHARGE_TAB_INDEX) {
     return (
-      <Paper className={styles.section}>
-        <Typography variant="h6" className={styles.sectionTitle}>
-          Discharge Summary
-        </Typography>
-        {patient?.dischargeSummary ? (
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#003D82', mt: 2 }}>
-              Anticipated Discharge Date
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              {new Date(patient.dischargeSummary.anticipatedDate).toLocaleDateString()}
-            </Typography>
+      <>
+        <TabHeader
+          title="Orders"
+          actionLabel={patient.dischargeSummary ? 'Edit Discharge Summary' : 'Add Discharge Summary'}
+          actionIcon={patient.dischargeSummary ? <EditIcon /> : undefined}
+          onAction={startEditDischarge}
+        />
+        <Paper className={styles.section}>
+          {subtabsBar}
+          {patient.dischargeSummary ? (
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#003D82', mt: 2 }}>
+                Anticipated Discharge Date
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {new Date(patient.dischargeSummary.anticipatedDate).toLocaleDateString()}
+              </Typography>
 
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#003D82', mt: 2 }}>
-              Condition at Discharge
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              {patient.dischargeSummary.condition}
-            </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#003D82', mt: 2 }}>
+                Condition at Discharge
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {patient.dischargeSummary.condition}
+              </Typography>
 
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#003D82', mt: 2 }}>
-              Discharge Instructions
-            </Typography>
-            <Box component="ul" sx={{ mt: 1 }}>
-              {patient.dischargeSummary.instructions.map((instr, idx) => (
-                <Typography component="li" variant="body2" key={idx} sx={{ mb: 1 }}>
-                  {instr}
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#003D82', mt: 2 }}>
+                Discharge Instructions
+              </Typography>
+              {patient.dischargeSummary.instructions.length === 0 ? (
+                <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
+                  No instructions documented.
                 </Typography>
-              ))}
+              ) : (
+                <Box component="ul" sx={{ mt: 1 }}>
+                  {patient.dischargeSummary.instructions.map((instr, idx) => (
+                    <Typography component="li" variant="body2" key={idx} sx={{ mb: 1 }}>
+                      {instr}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
             </Box>
-          </Box>
-        ) : (
-          <Box className={styles.emptyState}>
-            <Typography>No discharge summary available</Typography>
-          </Box>
-        )}
-      </Paper>
+          ) : (
+            <Box className={styles.emptyState}>
+              <Typography>No discharge summary yet.</Typography>
+              <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#999' }}>
+                Click "Add Discharge Summary" to create one.
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+
+        <Dialog open={dischargeOpen} onClose={() => setDischargeOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>
+            {patient.dischargeSummary ? 'Edit Discharge Summary' : 'Add Discharge Summary'}
+          </DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 0 }}>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  label="Anticipated Discharge Date"
+                  type="date"
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  value={dischargeForm.anticipatedDate}
+                  onChange={(e) =>
+                    setDischargeForm({ ...dischargeForm, anticipatedDate: e.target.value })
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} sm={8}>
+                <TextField
+                  label="Condition at Discharge"
+                  placeholder="e.g., Stable, hypertension controlled, glucose improved"
+                  fullWidth
+                  size="small"
+                  value={dischargeForm.condition}
+                  onChange={(e) =>
+                    setDischargeForm({ ...dischargeForm, condition: e.target.value })
+                  }
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
+                  Discharge Instructions
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 1, mb: 1 }}>
+                  <TextField
+                    placeholder='e.g., "Take all medications as prescribed"'
+                    fullWidth
+                    size="small"
+                    value={instructionDraft}
+                    onChange={(e) => setInstructionDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddInstruction()
+                      }
+                    }}
+                  />
+                  <Button variant="outlined" startIcon={<Add />} onClick={handleAddInstruction}>
+                    Add
+                  </Button>
+                </Stack>
+                {dischargeForm.instructions.length === 0 ? (
+                  <Typography variant="caption" sx={{ color: '#999' }}>
+                    No instructions yet.
+                  </Typography>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableBody>
+                        {dischargeForm.instructions.map((instr, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>{instr}</TableCell>
+                            <TableCell sx={{ width: 50 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRemoveInstruction(idx)}
+                                aria-label="remove instruction"
+                              >
+                                <Delete fontSize="small" sx={{ color: '#d32f2f' }} />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDischargeOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              onClick={handleDischargeSubmit}
+              disabled={loading || !dischargeForm.condition.trim()}
+              sx={{ backgroundColor: '#003D82' }}
+            >
+              {loading ? <CircularProgress size={20} /> : 'Save'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </>
     )
   }
 
-  const type = tabTypes[tabValue]
+  const type = TAB_ORDER_TYPES[tabValue]
   const filteredOrders = orders.filter((order) => order.type === type)
 
   return (
-    <Paper className={styles.section}>
-      <Typography variant="h6" className={styles.sectionTitle}>
-        Orders
-      </Typography>
+    <>
+      <TabHeader title="Orders" actionLabel="Add Order" onAction={startAdd} />
+      <Paper className={styles.section}>
+        {subtabsBar}
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)} variant="scrollable" scrollButtons="auto">
-          {tabs.map((tab) => (
-            <Tab key={tab} label={tab} />
-          ))}
-        </Tabs>
-      </Box>
-
-      {filteredOrders.length === 0 ? (
-        <Box className={styles.emptyState}>
-          <Typography>No {tabs[tabValue].toLowerCase()} orders</Typography>
-        </Box>
-      ) : (
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Order Name</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Details</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Ordered By</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredOrders.map((order) => (
-                <TableRow key={order._id}>
-                  <TableCell sx={{ fontWeight: 500 }}>{order.name}</TableCell>
-                  <TableCell sx={{ color: '#666', fontSize: '0.875rem' }}>{order.details}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={getPriorityLabel(order.priority)}
-                      size="small"
-                      sx={{
-                        backgroundColor: order.priority === 'stat' ? '#d32f2f' : order.priority === 'urgent' ? '#FF9800' : '#999',
-                        color: 'white',
-                        fontWeight: 600,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={order.status}
-                      size="small"
-                      sx={{
-                        backgroundColor: getStatusColor(order.status),
-                        color: 'white',
-                        fontWeight: 600,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ color: '#666' }}>{order.orderedBy}</TableCell>
-                  <TableCell sx={{ color: '#999' }}>{new Date(order.date).toLocaleDateString()}</TableCell>
+        {filteredOrders.length === 0 ? (
+          <Box className={styles.emptyState}>
+            <Typography>No {TAB_LABELS[tabValue].toLowerCase()} orders</Typography>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#999' }}>
+              Click "Add Order" to document the first one.
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Order Name</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Details</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Ordered By</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}></TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-    </Paper>
+              </TableHead>
+              <TableBody>
+                {filteredOrders.map((order) => (
+                  <TableRow key={order._id} sx={inErrorRowSx(order.markedInError)}>
+                    <TableCell sx={{ fontWeight: 500 }}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {order.name}
+                        {order.markedInError && <InErrorBanner entry={order} compact />}
+                        {order.lastModifiedAt && !order.markedInError && (
+                          <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
+                            (edited)
+                          </Typography>
+                        )}
+                      </Stack>
+                    </TableCell>
+                    <TableCell sx={{ color: '#666', fontSize: '0.875rem' }}>
+                      {order.details}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getPriorityLabel(order.priority)}
+                        size="small"
+                        sx={{
+                          backgroundColor:
+                            order.priority === 'stat'
+                              ? '#d32f2f'
+                              : order.priority === 'urgent'
+                              ? '#FF9800'
+                              : '#999',
+                          color: 'white',
+                          fontWeight: 600,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={capitalize(order.status)}
+                        size="small"
+                        sx={{
+                          backgroundColor: getStatusColor(order.status),
+                          color: 'white',
+                          fontWeight: 600,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ color: '#666' }}>{order.orderedBy}</TableCell>
+                    <TableCell sx={{ color: '#999' }}>
+                      {new Date(order.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <EditMenu
+                        entry={order}
+                        onEdit={() => startEdit(order)}
+                        onMarkInError={() => setMarkInErrorFor(order)}
+                        onViewHistory={() => setHistoryFor(order)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Paper>
+
+      <Dialog
+        open={editingOrder !== null}
+        onClose={() => setEditingOrder(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Edit {editingDialogTitleType} Order</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Order Name"
+                fullWidth
+                size="small"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Details"
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                value={form.details}
+                onChange={(e) => setForm({ ...form, details: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
+                Status
+              </Typography>
+              <Select
+                fullWidth
+                size="small"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as Order['status'] })}
+              >
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="discontinued">Discontinued</MenuItem>
+              </Select>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
+                Priority
+              </Typography>
+              <Select
+                fullWidth
+                size="small"
+                value={form.priority}
+                onChange={(e) =>
+                  setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })
+                }
+              >
+                <MenuItem value="routine">Routine</MenuItem>
+                <MenuItem value="urgent">Urgent</MenuItem>
+                <MenuItem value="stat">STAT</MenuItem>
+              </Select>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Ordered By"
+                fullWidth
+                size="small"
+                value={form.orderedBy}
+                onChange={(e) => setForm({ ...form, orderedBy: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Reason for edit (optional)"
+                fullWidth
+                size="small"
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingOrder(null)}>Cancel</Button>
+          <Button
+            onClick={handleEditSubmit}
+            variant="contained"
+            disabled={loading || !form.name.trim()}
+            sx={{ backgroundColor: '#003D82' }}
+          >
+            {loading ? <CircularProgress size={20} /> : 'Save Changes'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add {editingDialogTitleType} Order</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Order Name"
+                placeholder='e.g., "Acetaminophen 650mg PO Q6H PRN" or "CBC with diff"'
+                fullWidth
+                size="small"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Details"
+                placeholder="Indication, route, special instructions"
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                value={form.details}
+                onChange={(e) => setForm({ ...form, details: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
+                Status
+              </Typography>
+              <Select
+                fullWidth
+                size="small"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as Order['status'] })}
+              >
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="discontinued">Discontinued</MenuItem>
+              </Select>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
+                Priority
+              </Typography>
+              <Select
+                fullWidth
+                size="small"
+                value={form.priority}
+                onChange={(e) =>
+                  setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })
+                }
+              >
+                <MenuItem value="routine">Routine</MenuItem>
+                <MenuItem value="urgent">Urgent</MenuItem>
+                <MenuItem value="stat">STAT</MenuItem>
+              </Select>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Ordered By"
+                placeholder="Provider / your name if entering as student"
+                fullWidth
+                size="small"
+                value={form.orderedBy}
+                onChange={(e) => setForm({ ...form, orderedBy: e.target.value })}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleAddSubmit}
+            variant="contained"
+            disabled={loading || !form.name.trim()}
+            sx={{ backgroundColor: '#003D82' }}
+          >
+            {loading ? <CircularProgress size={20} /> : 'Add Order'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <MarkInErrorDialog
+        open={markInErrorFor !== null}
+        onClose={() => setMarkInErrorFor(null)}
+        onSubmit={handleMarkInErrorSubmit}
+        entityLabel="order"
+        loading={loading}
+      />
+      <ModificationHistory
+        open={historyFor !== null}
+        onClose={() => setHistoryFor(null)}
+        entry={historyFor}
+        entityLabel="order"
+      />
+    </>
   )
 }
 

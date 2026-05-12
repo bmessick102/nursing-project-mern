@@ -20,7 +20,7 @@ const UtilityBar: React.FC<UtilityBarProps> = ({
         <Box className={styles.linkGroup}>
           <a
             className={styles.link}
-            href="https://www.cuw.edu/faculty-staff/"
+            href="https://my.cuw.edu/"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -38,7 +38,7 @@ const UtilityBar: React.FC<UtilityBarProps> = ({
           <span className={styles.divider} />
           <a
             className={styles.link}
-            href="https://www.cuw.edu"
+            href="https://www.cuw.edu/academics/services/technology-services/helpdesk.html"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -47,7 +47,7 @@ const UtilityBar: React.FC<UtilityBarProps> = ({
           <span className={styles.divider} />
           <a
             className={styles.link}
-            href="https://www.cuw.edu/about/directory/"
+            href="https://www.cuw.edu/facultystaff/lookup.cfm"
             target="_blank"
             rel="noopener noreferrer"
           >

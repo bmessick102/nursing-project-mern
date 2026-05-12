@@ -47,7 +47,7 @@ const Footer: React.FC = () => {
             </a>
             <a
               className={styles.socialIcon}
-              href="https://www.instagram.com/cuwisconsin"
+              href="https://www.instagram.com/cuwisconsin/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
@@ -56,7 +56,7 @@ const Footer: React.FC = () => {
             </a>
             <a
               className={styles.socialIcon}
-              href="https://www.youtube.com/cuwisconsin"
+              href="https://www.youtube.com/c/cuwisconsin1881"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="YouTube"
@@ -65,7 +65,7 @@ const Footer: React.FC = () => {
             </a>
             <a
               className={styles.socialIcon}
-              href="https://www.linkedin.com/school/concordia-university-wisconsin"
+              href="https://www.linkedin.com/school/cuwisconsin/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
@@ -76,35 +76,143 @@ const Footer: React.FC = () => {
         </Box>
 
         <Box className={styles.column}>
-          <Typography component="h4">Charting</Typography>
+          <Typography component="h4">Clinical References</Typography>
           <ul className={styles.linkList}>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">Patient Summary</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">Chart Review</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">Results &amp; Labs</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">MAR</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">Flowsheets</a></li>
+            <li>
+              <a href="https://nanda.org/" target="_blank" rel="noopener noreferrer">
+                NANDA International
+              </a>
+            </li>
+            <li>
+              <a href="https://medlineplus.gov/" target="_blank" rel="noopener noreferrer">
+                MedlinePlus Drug Info
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cdc.gov/clinical-resources/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                CDC Clinical Resources
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.jointcommission.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                The Joint Commission
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.ncsbn.org/exams/nclex.page"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                NCSBN NCLEX
+              </a>
+            </li>
           </ul>
         </Box>
 
         <Box className={styles.column}>
           <Typography component="h4">Academics</Typography>
           <ul className={styles.linkList}>
-            <li><a href="https://www.cuw.edu/academics/schools/nursing/" target="_blank" rel="noopener noreferrer">School of Nursing</a></li>
-            <li><a href="https://www.cuw.edu/academics/" target="_blank" rel="noopener noreferrer">Course Catalog</a></li>
-            <li><a href="https://www.cuw.edu/academics/schools/nursing/" target="_blank" rel="noopener noreferrer">Clinical Resources</a></li>
-            <li><a href="https://www.cuw.edu/students/" target="_blank" rel="noopener noreferrer">Student Handbook</a></li>
-            <li><a href="https://www.cuw.edu/about/directory/" target="_blank" rel="noopener noreferrer">Faculty Directory</a></li>
+            <li>
+              <a
+                href="https://www.cuw.edu/academics/schools/nursing/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                School of Nursing
+              </a>
+            </li>
+            <li>
+              <a href="https://catalog.cuw.edu/" target="_blank" rel="noopener noreferrer">
+                Course Catalog
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cuw.edu/academics/services/student-academic-resources/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Academic Resources
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cuw.edu/students/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Student Resources
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cuw.edu/facultystaff/lookup.cfm"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Faculty Directory
+              </a>
+            </li>
           </ul>
         </Box>
 
         <Box className={styles.column}>
           <Typography component="h4">Support</Typography>
           <ul className={styles.linkList}>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">Help Center</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">IT Support</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">HIPAA Notice</a></li>
-            <li><a href="https://www.cuw.edu" target="_blank" rel="noopener noreferrer">Accessibility</a></li>
+            <li>
+              <a
+                href="https://www.cuw.edu/academics/services/technology-services/helpdesk.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                IT Helpdesk
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cuw.edu/academics/services/technology-services/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Technology Services
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cuw.edu/about/offices/compliance/privacy-policy/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Privacy Policy
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.hhs.gov/hipaa/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                HIPAA (HHS.gov)
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cuw.edu/academics/services/student-academic-resources/academic-resource-center/accessibility-services/rights-responsiblities.html"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Accessibility Services
+              </a>
+            </li>
           </ul>
         </Box>
       </Box>

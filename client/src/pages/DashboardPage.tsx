@@ -15,6 +15,7 @@ import ChartReviewTab from 'components/tabs/ChartReviewTab'
 import ResultsTab from 'components/tabs/ResultsTab'
 import MARTab from 'components/tabs/MARTab'
 import FlowsheetsTab from 'components/tabs/FlowsheetsTab'
+import AssessmentsTab from 'components/tabs/AssessmentsTab'
 import IOTab from 'components/tabs/IOTab'
 import NotesTab from 'components/tabs/NotesTab'
 import OrdersTab from 'components/tabs/OrdersTab'
@@ -40,6 +41,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     { label: 'Results', component: ResultsTab },
     { label: 'MAR', component: MARTab },
     { label: 'Flowsheets', component: FlowsheetsTab },
+    { label: 'Assessments', component: AssessmentsTab },
     { label: 'I&O', component: IOTab },
     { label: 'Notes', component: NotesTab },
     { label: 'Orders', component: OrdersTab },

@@ -16,37 +16,59 @@ import {
   Tabs,
   Tab,
   CircularProgress,
+  Stack,
 } from '@mui/material'
 import type { Patient, NursingNote } from '@types'
+import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
+import { useCurrentUser } from 'hooks/useCurrentUser'
+import EditMenu from 'components/edit/EditMenu'
+import AddendumDialog from 'components/edit/AddendumDialog'
+import MarkInErrorDialog from 'components/edit/MarkInErrorDialog'
+import ModificationHistory from 'components/edit/ModificationHistory'
+import InErrorBanner, { inErrorRowSx } from 'components/edit/InErrorBanner'
+import AddendaList from 'components/edit/AddendaList'
+import TabHeader from 'components/common/TabHeader'
+import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
 interface NotesTabProps {
   patient: Patient | null
 }
 
+const blankForm = () => ({
+  type: 'Progress Note',
+  content: '',
+  signed: false,
+})
+
 const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
+  const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
+  const { username } = useCurrentUser()
   const [selectedNote, setSelectedNote] = useState<NursingNote | null>(null)
-  const [mode, setMode] = useState<'view' | 'write'>('view')
+  const [mode, setMode] = useState<'view' | 'write' | 'edit'>('view')
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [filterTab, setFilterTab] = useState(0)
-  const [form, setForm] = useState({
-    type: 'Progress Note',
-    content: '',
-    signed: false,
-  })
-  const { addNote, loading } = useChartingApi()
+  const [form, setForm] = useState(blankForm())
+  const [editReason, setEditReason] = useState('')
+
+  const [addendumFor, setAddendumFor] = useState<NursingNote | null>(null)
+  const [markInErrorFor, setMarkInErrorFor] = useState<NursingNote | null>(null)
+  const [historyFor, setHistoryFor] = useState<NursingNote | null>(null)
+
+  const {
+    addNote,
+    editResource,
+    addAddendumToResource,
+    markResourceInError,
+    loading,
+  } = useChartingApi()
 
   if (!patient) {
-    return (
-      <Paper className={styles.section}>
-        <Box className={styles.emptyState}>
-          <Typography>No patient selected</Typography>
-        </Box>
-      </Paper>
-    )
+    return <EmptyState message="No patient selected" />
   }
 
-  const nursingNotes = patient?.nursingNotes || []
+  const nursingNotes = patient.nursingNotes || []
   const noteTypes = ['Progress Note', 'Assessment', 'Procedure Note', 'Incident Report']
   const filters = ['All Notes', 'Progress', 'Procedures', 'Assessment', 'Incomplete']
 
@@ -63,172 +85,330 @@ const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
 
   const filteredNotes = getFilteredNotes()
   const displayNotes = [...filteredNotes].reverse()
-  const activeNote = selectedNote || displayNotes[0]
+  const activeNote =
+    (selectedNote && nursingNotes.find((n) => n._id === selectedNote._id)) || displayNotes[0]
+
+  const startWrite = () => {
+    setMode('write')
+    setEditingId(null)
+    setForm(blankForm())
+    setEditReason('')
+  }
+
+  const startEdit = (note: NursingNote) => {
+    setMode('edit')
+    setEditingId(note._id)
+    setForm({ type: note.type, content: note.content, signed: note.signed })
+    setEditReason('')
+    setSelectedNote(note)
+  }
 
   const handleSave = async () => {
     if (!form.content) return
 
     try {
-      const note: Omit<NursingNote, '_id'> = {
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: form.type,
-        author: 'Current User',
-        authorRole: 'RN',
-        content: form.content,
-        signed: form.signed,
+      if (mode === 'edit' && editingId) {
+        const updated = await editResource(
+          patient._id,
+          'notes',
+          editingId,
+          { type: form.type, content: form.content, signed: form.signed },
+          editReason || undefined,
+        )
+        setSelectedPatient(updated)
+      } else {
+        const note: Omit<NursingNote, '_id'> = {
+          date: new Date().toLocaleDateString(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: form.type,
+          author: username,
+          authorRole: 'RN',
+          content: form.content,
+          signed: form.signed,
+        }
+        const updated = await addNote(patient._id, note)
+        setSelectedPatient(updated)
       }
-      await addNote(patient._id, note)
-      setForm({ type: 'Progress Note', content: '', signed: false })
+      setForm(blankForm())
       setMode('view')
-      setSelectedNote(null)
+      setEditingId(null)
+      setEditReason('')
     } catch (err) {
       console.error('Failed to save note', err)
     }
   }
 
+  const handleAddendumSubmit = async (content: string) => {
+    if (!addendumFor) return
+    try {
+      const updated = await addAddendumToResource(
+        patient._id,
+        'notes',
+        addendumFor._id,
+        content,
+        username,
+        'RN',
+      )
+      setSelectedPatient(updated)
+      const refreshed = updated.nursingNotes.find((n) => n._id === addendumFor._id)
+      if (refreshed) setSelectedNote(refreshed)
+      setAddendumFor(null)
+    } catch (err) {
+      console.error('Failed to add addendum', err)
+    }
+  }
+
+  const handleMarkInErrorSubmit = async (reason: string) => {
+    if (!markInErrorFor) return
+    try {
+      const updated = await markResourceInError(
+        patient._id,
+        'notes',
+        markInErrorFor._id,
+        reason,
+        username,
+      )
+      setSelectedPatient(updated)
+      const refreshed = updated.nursingNotes.find((n) => n._id === markInErrorFor._id)
+      if (refreshed) setSelectedNote(refreshed)
+      setMarkInErrorFor(null)
+    } catch (err) {
+      console.error('Failed to mark in error', err)
+    }
+  }
+
   return (
-    <Grid container spacing={2} className={styles.tabContainer}>
-      <Grid item xs={12} md={4}>
-        <Paper sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Notes
-            </Typography>
-            <Button size="small" variant="contained" onClick={() => setMode('write')} sx={{ backgroundColor: '#003D82' }}>
-              New Note
-            </Button>
-          </Box>
-
-          <Tabs
-            orientation="vertical"
-            value={filterTab}
-            onChange={(_, val) => {
-              setFilterTab(val)
-              setSelectedNote(null)
-            }}
-            sx={{ mb: 2 }}
-          >
-            {filters.map((f) => (
-              <Tab key={f} label={f} />
-            ))}
-          </Tabs>
-
-          <Box sx={{ maxHeight: 500, overflow: 'auto' }}>
-            {displayNotes.map((note) => (
-              <Card
-                key={note._id}
-                sx={{
-                  mb: 1,
-                  backgroundColor: selectedNote?._id === note._id ? '#FFFBF0' : '#fff',
-                  borderLeft: selectedNote?._id === note._id ? '4px solid #FFB81C' : '4px solid transparent',
-                }}
-              >
-                <CardActionArea onClick={() => setSelectedNote(note)} sx={{ p: 1.5 }}>
-                  <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                    <Avatar sx={{ width: 32, height: 32, backgroundColor: '#003D82', fontSize: '0.75rem' }}>
-                      {note.author.substring(0, 1)}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#003D82' }}>
-                        {note.author}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#999' }}>
-                        {note.authorRole}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography variant="caption" sx={{ color: '#666' }}>
-                    {note.date} • {note.time}
-                  </Typography>
-                  <Typography variant="caption" sx={{ display: 'block', color: '#999', mt: 0.5 }}>
-                    {note.type}
-                  </Typography>
-                </CardActionArea>
-              </Card>
-            ))}
-          </Box>
-        </Paper>
-      </Grid>
-
-      <Grid item xs={12} md={8}>
-        {mode === 'view' && activeNote && (
+    <>
+      <TabHeader title="Nursing Notes" actionLabel="Add Note" onAction={startWrite} />
+      <Grid container spacing={2} className={styles.tabContainer}>
+        <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2 }}>
-            <Box sx={{ mb: 2, pb: 1, borderBottom: '1px solid #eee' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <Box>
-                  <Typography variant="h6" sx={{ color: '#003D82', fontWeight: 600 }}>
-                    {activeNote.type}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#666', mt: 0.5 }}>
-                    <strong>{activeNote.author}</strong> • {activeNote.authorRole}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#999' }}>
-                    {activeNote.date} at {activeNote.time}
-                  </Typography>
-                </Box>
-                {activeNote.signed && (
-                  <Typography variant="caption" sx={{ backgroundColor: '#E8F5E9', color: '#4CAF50', px: 1, py: 0.5, borderRadius: 1 }}>
-                    ✓ Signed
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-            <Typography variant="body2" sx={{ color: '#333', lineHeight: 1.8 }}>
-              {activeNote.content}
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+              Filter
             </Typography>
-          </Paper>
-        )}
 
-        {mode === 'write' && (
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" sx={{ color: '#003D82', fontWeight: 600, mb: 2 }}>
-              New Note
-            </Typography>
-            <Box sx={{ display: 'grid', gap: 2 }}>
-              <Select
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-              >
-                {noteTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
-                  </MenuItem>
-                ))}
-              </Select>
+            <Tabs
+              orientation="vertical"
+              value={filterTab}
+              onChange={(_, val) => {
+                setFilterTab(val)
+                setSelectedNote(null)
+              }}
+              sx={{ mb: 2 }}
+            >
+              {filters.map((f) => (
+                <Tab key={f} label={f} />
+              ))}
+            </Tabs>
 
-              <TextField
-                multiline
-                rows={10}
-                placeholder="Enter note content..."
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                fullWidth
-              />
-
-              <FormControlLabel
-                control={<Checkbox checked={form.signed} onChange={(e) => setForm({ ...form, signed: e.target.checked })} />}
-                label="Sign Note"
-              />
-
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="contained"
-                  onClick={handleSave}
-                  disabled={loading || !form.content}
-                  sx={{ backgroundColor: '#003D82' }}
+            <Box sx={{ maxHeight: 500, overflow: 'auto' }}>
+              {displayNotes.map((note) => (
+                <Card
+                  key={note._id}
+                  sx={{
+                    mb: 1,
+                    backgroundColor:
+                      selectedNote?._id === note._id ? '#FFFBF0' : '#fff',
+                    borderLeft:
+                      selectedNote?._id === note._id ? '4px solid #FFB81C' : '4px solid transparent',
+                    ...inErrorRowSx(note.markedInError),
+                  }}
                 >
-                  {loading ? <CircularProgress size={24} /> : 'Save Note'}
-                </Button>
-                <Button variant="outlined" onClick={() => setMode('view')}>
-                  Cancel
-                </Button>
-              </Box>
+                  <CardActionArea onClick={() => setSelectedNote(note)} sx={{ p: 1.5 }}>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          backgroundColor: '#003D82',
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        {note.author.substring(0, 1)}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#003D82' }}>
+                          {note.author}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#999' }}>
+                          {note.authorRole}
+                        </Typography>
+                      </Box>
+                      {note.markedInError && <InErrorBanner entry={note} compact />}
+                    </Box>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      {note.date} • {note.time}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: '#999', mt: 0.5 }}>
+                      {note.type}
+                    </Typography>
+                  </CardActionArea>
+                </Card>
+              ))}
             </Box>
           </Paper>
-        )}
+        </Grid>
+
+        <Grid item xs={12} md={8}>
+          {(mode === 'view' || mode === 'edit') && activeNote && mode === 'view' && (
+            <Paper sx={{ p: 2 }}>
+              <InErrorBanner entry={activeNote} />
+              <Box
+                sx={{ mb: 2, pb: 1, borderBottom: '1px solid #eee', ...inErrorRowSx(activeNote.markedInError) }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ color: '#003D82', fontWeight: 600 }}>
+                      {activeNote.type}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666', mt: 0.5 }}>
+                      <strong>{activeNote.author}</strong> • {activeNote.authorRole}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#999' }}>
+                      {activeNote.date} at {activeNote.time}
+                    </Typography>
+                    {activeNote.lastModifiedAt && (
+                      <Typography variant="caption" sx={{ display: 'block', color: '#999', mt: 0.5, fontStyle: 'italic' }}>
+                        Modified by {activeNote.lastModifiedBy} at{' '}
+                        {new Date(activeNote.lastModifiedAt).toLocaleString()}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    {activeNote.signed && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          backgroundColor: '#E8F5E9',
+                          color: '#4CAF50',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                        }}
+                      >
+                        ✓ Signed
+                      </Typography>
+                    )}
+                    <EditMenu
+                      entry={activeNote}
+                      signed={activeNote.signed}
+                      onEdit={() => startEdit(activeNote)}
+                      onAddendum={() => setAddendumFor(activeNote)}
+                      onMarkInError={() => setMarkInErrorFor(activeNote)}
+                      onViewHistory={() => setHistoryFor(activeNote)}
+                    />
+                  </Stack>
+                </Box>
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{ color: '#333', lineHeight: 1.8, whiteSpace: 'pre-wrap', ...inErrorRowSx(activeNote.markedInError) }}
+              >
+                {activeNote.content}
+              </Typography>
+              <AddendaList addenda={activeNote.addenda} />
+            </Paper>
+          )}
+
+          {(mode === 'write' || mode === 'edit') && (
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" sx={{ color: '#003D82', fontWeight: 600, mb: 2 }}>
+                {mode === 'edit' ? 'Edit Note' : 'New Note'}
+              </Typography>
+              <Box sx={{ display: 'grid', gap: 2 }}>
+                <Select
+                  value={form.type}
+                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                >
+                  {noteTypes.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
+                </Select>
+
+                <TextField
+                  multiline
+                  rows={10}
+                  placeholder="Enter note content..."
+                  value={form.content}
+                  onChange={(e) => setForm({ ...form, content: e.target.value })}
+                  fullWidth
+                />
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.signed}
+                      onChange={(e) => setForm({ ...form, signed: e.target.checked })}
+                    />
+                  }
+                  label="Sign Note"
+                />
+
+                {mode === 'edit' && (
+                  <TextField
+                    label="Reason for edit (optional, but recommended)"
+                    placeholder="e.g., Corrected vital sign value"
+                    fullWidth
+                    size="small"
+                    value={editReason}
+                    onChange={(e) => setEditReason(e.target.value)}
+                  />
+                )}
+
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={loading || !form.content}
+                    sx={{ backgroundColor: '#003D82' }}
+                  >
+                    {loading ? (
+                      <CircularProgress size={20} />
+                    ) : mode === 'edit' ? (
+                      'Save Changes'
+                    ) : (
+                      'Save Note'
+                    )}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setMode('view')
+                      setEditingId(null)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Box>
+              </Box>
+            </Paper>
+          )}
+        </Grid>
       </Grid>
-    </Grid>
+
+      <AddendumDialog
+        open={addendumFor !== null}
+        onClose={() => setAddendumFor(null)}
+        onSubmit={handleAddendumSubmit}
+        entityLabel="note"
+        loading={loading}
+      />
+      <MarkInErrorDialog
+        open={markInErrorFor !== null}
+        onClose={() => setMarkInErrorFor(null)}
+        onSubmit={handleMarkInErrorSubmit}
+        entityLabel="note"
+        loading={loading}
+      />
+      <ModificationHistory
+        open={historyFor !== null}
+        onClose={() => setHistoryFor(null)}
+        entry={historyFor}
+        entityLabel="note"
+      />
+    </>
   )
 }
 
