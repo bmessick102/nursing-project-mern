@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "seed-stu-1",
+    "code": "CUW-NURS-STU-Z9M4K7P2A8B5",
+    "role": "student",
+    "maxUses": 50,
+    "useCount": 0,
+    "createdBy": "system",
+    "createdAt": "2026-05-12T00:00:00.000Z",
+    "note": "Sample student invite — Spring 2026 cohort",
+    "active": true,
+    "usedBy": []
+  },
+  {
+    "_id": "seed-ins-1",
+    "code": "CUW-NURS-INS-V8R3L6N5W3D2",
+    "role": "instructor",
+    "maxUses": 10,
+    "useCount": 0,
+    "createdBy": "system",
+    "createdAt": "2026-05-12T00:00:00.000Z",
+    "note": "Sample instructor invite — clinical faculty",
+    "active": true,
+    "usedBy": []
+  },
+  {
+    "_id": "seed-adm-1",
+    "code": "CUW-NURS-ADM-Q7X2W5T9B6E1",
+    "role": "administrator",
+    "maxUses": 3,
+    "useCount": 0,
+    "createdBy": "system",
+    "createdAt": "2026-05-12T00:00:00.000Z",
+    "note": "Sample administrator invite — restricted",
+    "active": true,
+    "usedBy": []
+  }
+]

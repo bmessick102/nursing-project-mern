@@ -9,6 +9,7 @@ import patientRoutes from './routes/patients'
 import Account from './models/FileBasedAccount'
 import Course from './models/FileBasedCourse'
 import Patient from './models/FileBasedPatient'
+import InviteCode from './models/FileBasedInviteCode'
 
 const bootstrap = async () => {
   await fileStorage.connect()
@@ -17,6 +18,7 @@ const bootstrap = async () => {
   Account.initializeDefaultAccounts()
   Course.initializeDefaultCourses()
   Patient.initializeDefaultPatients()
+  InviteCode.initializeDefaultCodes()
 
   app.get('/', (req, res) => {
     res.status(200).send('Hello, world!')

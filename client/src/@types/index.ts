@@ -1,8 +1,32 @@
+export type AccountRole =
+  | 'student'
+  | 'instructor'
+  | 'administrator'
+  | 'user'
+  | 'admin'
+
 export interface Account {
   _id: string
   username: string
   password?: string
-  role: 'user' | 'admin'
+  firstName?: string
+  lastName?: string
+  email?: string
+  role: AccountRole
+}
+
+export interface FormData {
+  username: string
+  password: string
+}
+
+export interface RegisterData {
+  username: string
+  password: string
+  firstName: string
+  lastName: string
+  email: string
+  inviteCode: string
 }
 
 export interface Modification {
@@ -29,11 +53,6 @@ export interface Auditable {
   markedInErrorBy?: string
   markedInErrorAt?: string
   addenda?: Addendum[]
-}
-
-export interface FormData {
-  username: string
-  password: string
 }
 
 export interface Course {

@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, type PropsWithChildren, useMemo } from 'react'
 import axios from 'utils/axios'
-import { type FormData, type Account } from '@types'
+import { type FormData, type RegisterData, type Account } from '@types'
 
 interface Context {
   token: string | null
   account: Account | null
   isLoggedIn: boolean
-  register: (payload: FormData) => Promise<any>
+  register: (payload: RegisterData) => Promise<any>
   login: (payload: FormData) => Promise<any>
   logout: () => void
 }
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [account, setAccount] = useState(initContext.account)
   const [isLoggedIn, setIsLoggedIn] = useState(initContext.isLoggedIn)
 
-  const register = (formData: FormData) => {
+  const register = (formData: RegisterData) => {
     return new Promise((resolve, reject) => {
       axios
         .post('/auth/register', formData)

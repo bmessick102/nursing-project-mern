@@ -9,6 +9,7 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
+  Link as MuiLink,
 } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuth } from 'contexts/AuthContext'
@@ -17,7 +18,11 @@ import PillarCards from 'components/PillarCards'
 import Footer from 'components/Footer'
 import styles from 'styles/LoginPage.module.css'
 
-const LoginPage = () => {
+interface LoginPageProps {
+  onSwitchToSignUp?: () => void
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
   const { login, isLoggedIn } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -122,6 +127,28 @@ const LoginPage = () => {
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
               </Button>
             </form>
+
+            {onSwitchToSignUp && (
+              <Typography
+                variant="body2"
+                sx={{ mt: 3, textAlign: 'center', color: '#4A4A4A' }}
+              >
+                Don&rsquo;t have an account?{' '}
+                <MuiLink
+                  component="button"
+                  type="button"
+                  onClick={onSwitchToSignUp}
+                  sx={{
+                    color: '#003D82',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  Sign Up
+                </MuiLink>
+              </Typography>
+            )}
 
             <Typography variant="caption" className={styles.footer}>
               Last login: Never

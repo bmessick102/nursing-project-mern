@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from 'contexts/AuthContext'
 import { useAppStore } from 'store/useAppStore'
 import LoginPage from 'pages/LoginPage'
+import SignUpPage from 'pages/SignUpPage'
 import CourseSelectionPage from 'pages/CourseSelectionPage'
 import PatientListPage from 'pages/PatientListPage'
 import DashboardPage from 'pages/DashboardPage'
@@ -10,10 +11,14 @@ const App = () => {
   const { isLoggedIn, logout } = useAuth()
   const { selectedCourse, selectedPatient, setSelectedCourse, setSelectedPatient } =
     useAppStore()
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login')
 
-  // Show login page if not logged in
+  // Show login or signup page if not logged in
   if (!isLoggedIn) {
-    return <LoginPage />
+    if (authView === 'signup') {
+      return <SignUpPage onSwitchToLogin={() => setAuthView('login')} />
+    }
+    return <LoginPage onSwitchToSignUp={() => setAuthView('signup')} />
   }
 
   // Show course selection if logged in but no course selected
@@ -48,6 +53,7 @@ const App = () => {
         logout()
         setSelectedCourse(null)
         setSelectedPatient(null)
+        setAuthView('login')
       }}
       onChangePatient={() => {
         setSelectedPatient(null)

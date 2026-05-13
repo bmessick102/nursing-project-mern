@@ -28,7 +28,17 @@ const AuthModal: React.FC<Props> = () => {
     setError('')
 
     try {
-      isRegisterMode ? await register(formData) : await login(formData)
+      if (isRegisterMode) {
+        await register({
+          ...formData,
+          firstName: '',
+          lastName: '',
+          email: '',
+          inviteCode: '',
+        })
+      } else {
+        await login(formData)
+      }
       onClose()
     } catch (error: any) {
       setError(typeof error === 'string' ? error : JSON.stringify(error))
