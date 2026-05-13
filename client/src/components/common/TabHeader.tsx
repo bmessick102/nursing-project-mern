@@ -29,6 +29,7 @@ const TabHeader: React.FC<TabHeaderProps> = ({
       }}
     >
       <Typography
+        component="h2"
         variant="h6"
         sx={{
           color: '#003D82',

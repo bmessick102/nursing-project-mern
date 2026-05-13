@@ -17,7 +17,7 @@ const register: RequestHandler = async (req, res, next) => {
     const validationError = await joi.validate(
       {
         username: joi.instance.string().min(3).max(40).required(),
-        password: joi.instance.string().min(6).required(),
+        password: joi.instance.string().min(12).required(),
         firstName: joi.instance.string().min(1).max(80).optional(),
         lastName: joi.instance.string().min(1).max(80).optional(),
         email: joi.instance.string().email().optional(),

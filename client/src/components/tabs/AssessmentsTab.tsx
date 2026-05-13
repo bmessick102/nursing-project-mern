@@ -178,7 +178,7 @@ const AssessmentsTab: React.FC<AssessmentsTabProps> = ({ patient }) => {
                         size="small"
                         label="Not yet documented"
                         variant="outlined"
-                        sx={{ color: '#999' }}
+                        sx={{ color: '#6B6B6B' }}
                       />
                     )}
                   </Stack>
@@ -242,7 +242,7 @@ const AssessmentsTab: React.FC<AssessmentsTabProps> = ({ patient }) => {
                         </Box>
                       )}
                     </TableCell>
-                    <TableCell sx={{ color: '#999' }}>{a.documentedBy}</TableCell>
+                    <TableCell sx={{ color: '#6B6B6B' }}>{a.documentedBy}</TableCell>
                     <TableCell>
                       <EditMenu
                         entry={a}

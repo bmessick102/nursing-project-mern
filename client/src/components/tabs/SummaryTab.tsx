@@ -21,7 +21,7 @@ import {
   Stack,
   CircularProgress,
 } from '@mui/material'
-import { Edit as EditIcon, Add, Delete } from '@mui/icons-material'
+import { Edit as EditIcon, Add, Delete, Warning as WarningIcon } from '@mui/icons-material'
 import type { Patient } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
@@ -206,9 +206,18 @@ const SummaryTab: React.FC<SummaryTabProps> = ({ patient }) => {
                 patient.allergies.map((allergy, idx) => (
                   <Chip
                     key={idx}
+                    icon={<WarningIcon fontSize="small" />}
                     label={allergy}
                     variant="outlined"
-                    sx={{ mr: 1, mb: 1, color: '#B71C1C', borderColor: '#B71C1C', fontWeight: 600 }}
+                    aria-label={`Allergy: ${allergy}`}
+                    sx={{
+                      mr: 1,
+                      mb: 1,
+                      color: '#B71C1C',
+                      borderColor: '#B71C1C',
+                      fontWeight: 600,
+                      '& .MuiChip-icon': { color: '#B71C1C' },
+                    }}
                   />
                 ))
               )}
@@ -320,7 +329,7 @@ const SummaryTab: React.FC<SummaryTabProps> = ({ patient }) => {
             </Button>
           </Stack>
           {strList.length === 0 ? (
-            <Typography variant="caption" sx={{ color: '#999' }}>
+            <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
               No entries.
             </Typography>
           ) : (
@@ -400,7 +409,7 @@ const SummaryTab: React.FC<SummaryTabProps> = ({ patient }) => {
             </Grid>
           </Grid>
           {medList.length === 0 ? (
-            <Typography variant="caption" sx={{ color: '#999' }}>
+            <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
               No medications.
             </Typography>
           ) : (

@@ -70,7 +70,7 @@ const ModificationHistory: React.FC<ModificationHistoryProps> = ({
         </Typography>
 
         {modifications.length === 0 && (
-          <Typography variant="body2" sx={{ color: '#999' }}>
+          <Typography variant="body2" sx={{ color: '#6B6B6B' }}>
             No prior versions.
           </Typography>
         )}

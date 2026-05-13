@@ -168,6 +168,7 @@ const SkinIntegrityAssessment: React.FC<Props> = ({ patient, onSaved }) => {
             size="small"
             value={skinColor}
             onChange={(e) => setSkinColor(e.target.value)}
+              aria-label="Color / Temperature"
           >
             <MenuItem value="Pink, warm, dry">Pink, warm, dry</MenuItem>
             <MenuItem value="Pale">Pale</MenuItem>
@@ -187,6 +188,7 @@ const SkinIntegrityAssessment: React.FC<Props> = ({ patient, onSaved }) => {
             size="small"
             value={turgor}
             onChange={(e) => setTurgor(e.target.value)}
+              aria-label="Turgor"
           >
             <MenuItem value="Elastic">Elastic</MenuItem>
             <MenuItem value="Tenting present">Tenting present</MenuItem>
@@ -202,6 +204,7 @@ const SkinIntegrityAssessment: React.FC<Props> = ({ patient, onSaved }) => {
             size="small"
             value={wounds}
             onChange={(e) => setWounds(e.target.value)}
+              aria-label="Wounds / Pressure Injuries"
           >
             <MenuItem value="None">None</MenuItem>
             <MenuItem value="Stage 1 pressure injury">Stage 1 pressure injury</MenuItem>
@@ -276,9 +279,8 @@ const SkinIntegrityAssessment: React.FC<Props> = ({ patient, onSaved }) => {
               fullWidth
               size="small"
               value={braden.frictionShear}
-              onChange={(e) =>
-                setBraden({ ...braden, frictionShear: Number(e.target.value) })
-              }
+              aria-label="Friction / Shear"
+              onChange={(e) => setBraden({ ...braden, frictionShear: Number(e.target.value) })}
             >
               {FRICTION_OPTIONS.map((o) => (
                 <MenuItem key={o.value} value={o.value}>

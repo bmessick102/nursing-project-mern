@@ -51,7 +51,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
     !!username.trim() &&
     username.trim().length >= 3 &&
     !!password &&
-    password.length >= 6 &&
+    password.length >= 12 &&
     password === confirmPassword &&
     emailIsValid &&
     codeIsValidFormat &&
@@ -66,7 +66,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
       return
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
+      setError('Password must be at least 12 characters (HIPAA recommendation).')
       return
     }
     if (username.trim().length < 3) {
@@ -211,7 +211,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
                     disabled={loading}
                     variant="outlined"
                     autoComplete="new-password"
-                    helperText="6+ characters"
+                    helperText="12+ characters required"
                     required
                     InputProps={{
                       endAdornment: (

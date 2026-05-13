@@ -107,6 +107,12 @@ const PainAssessment: React.FC<Props> = ({ patient, onSaved }) => {
         min={0}
         max={10}
         step={1}
+        aria-label="Pain score, 0 to 10"
+        aria-valuetext={`${score} out of 10${
+          FACES_LABELS[Math.round(score / 2) * 2]
+            ? ', ' + FACES_LABELS[Math.round(score / 2) * 2]
+            : ''
+        }`}
         marks={[
           { value: 0, label: '0' },
           { value: 2, label: '2' },
@@ -163,6 +169,7 @@ const PainAssessment: React.FC<Props> = ({ patient, onSaved }) => {
               size="small"
               value={severity}
               onChange={(e) => setSeverity(e.target.value)}
+              aria-label="S — Severity"
             >
               <MenuItem value="None">None</MenuItem>
               <MenuItem value="Mild">Mild</MenuItem>
@@ -182,6 +189,7 @@ const PainAssessment: React.FC<Props> = ({ patient, onSaved }) => {
               size="small"
               value={timing}
               onChange={(e) => setTiming(e.target.value)}
+              aria-label="T — Timing"
             >
               <MenuItem value="Constant">Constant</MenuItem>
               <MenuItem value="Intermittent">Intermittent</MenuItem>
@@ -200,6 +208,7 @@ const PainAssessment: React.FC<Props> = ({ patient, onSaved }) => {
               size="small"
               value={intervention}
               onChange={(e) => setIntervention(e.target.value)}
+              aria-label="Intervention"
             >
               <MenuItem value="None this shift">None this shift</MenuItem>
               <MenuItem value="Repositioning">Repositioning</MenuItem>

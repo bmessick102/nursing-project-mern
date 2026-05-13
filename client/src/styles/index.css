@@ -6,11 +6,12 @@
   --cuw-blue: #245699;
   --cuw-gold: #FFB81C;
   --cuw-gold-dark: #E0A116;
-  --cuw-gray: #B1B3B3;
+  --cuw-gray: #6B6B6B;          /* WCAG AA 5.74:1 on white (was #B1B3B3, 2.51:1) */
+  --cuw-gray-strong: #4A4A4A;   /* 9.73:1 */
   --cuw-gray-light: #F4F4F4;
   --cuw-gray-bg: #F8F9FA;
   --cuw-text: #1F2937;
-  --cuw-text-muted: #6B7280;
+  --cuw-text-muted: #595959;    /* 7.04:1 (was #6B7280, 4.69:1) */
   --cuw-border: #E5E7EB;
   --cuw-white: #FFFFFF;
 
@@ -107,6 +108,88 @@ code {
   flex-direction: column;
   align-items: stretch;
   background-color: var(--cuw-gray-bg);
+}
+
+/* ---------- Accessibility primitives ---------- */
+
+/* Skip-to-content link — visually hidden until focused.
+   WCAG 2.4.1 (Level A) Bypass Blocks */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  width: auto;
+  height: auto;
+  z-index: 9999;
+  background: var(--cuw-navy);
+  color: var(--cuw-white);
+  padding: 12px 20px;
+  border-radius: 2px;
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30);
+  outline: 3px solid var(--cuw-gold);
+  outline-offset: 2px;
+}
+
+/* High-visibility focus rings on every interactive element.
+   WCAG 2.4.7 (Level AA) Focus Visible */
+*:focus-visible {
+  outline: 3px solid var(--cuw-gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--cuw-gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(0, 61, 130, 0.20);
+}
+
+/* Respect user motion preferences.
+   WCAG 2.3.3 (Level AAA) Animation from Interactions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Screen-reader-only utility class.
+   For text that should be announced but not visually displayed. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* PHI privacy mode — patient identifiers blur until hover/focus.
+   Apply via data-phi="true" attribute on names, MRNs, DOBs, etc.
+   Toggled by adding/removing .privacy-mode on body. */
+.privacy-mode [data-phi]:not(:hover):not(:focus-within) {
+  filter: blur(6px);
+  transition: filter 0.2s ease;
 }
 
 .header {

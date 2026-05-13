@@ -24,7 +24,12 @@ import type { Patient, VitalSigns } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
-import { vitalCellSx } from 'utils/vitalRanges'
+import {
+  vitalCellSx,
+  severityPrefix,
+  vitalCellAriaLabel,
+  getVitalSeverity,
+} from 'utils/vitalRanges'
 import EditMenu from 'components/edit/EditMenu'
 import MarkInErrorDialog from 'components/edit/MarkInErrorDialog'
 import ModificationHistory from 'components/edit/ModificationHistory'
@@ -175,13 +180,17 @@ const FlowsheetsTab: React.FC<FlowsheetsTabProps> = ({ patient }) => {
                         {new Date(vital.timestamp).toLocaleString()}
                         {vital.markedInError && <InErrorBanner entry={vital} compact />}
                         {vital.lastModifiedAt && !vital.markedInError && (
-                          <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
+                          <Typography variant="caption" sx={{ color: '#6B6B6B', fontStyle: 'italic' }}>
                             (edited)
                           </Typography>
                         )}
                       </Stack>
                     </TableCell>
-                    <TableCell sx={vitalCellSx('temp', vital.temp)}>
+                    <TableCell
+                      sx={vitalCellSx('temp', vital.temp)}
+                      aria-label={vitalCellAriaLabel('temp', vital.temp, '°F')}
+                    >
+                      {severityPrefix(getVitalSeverity('temp', vital.temp))}
                       {vital.temp}°F ({vital.tempSource})
                     </TableCell>
                     <TableCell
@@ -189,17 +198,52 @@ const FlowsheetsTab: React.FC<FlowsheetsTabProps> = ({ patient }) => {
                         ...vitalCellSx('systolic', vital.systolic),
                         ...vitalCellSx('diastolic', vital.diastolic),
                       }}
+                      aria-label={`Blood pressure ${vital.systolic} over ${vital.diastolic}, ${
+                        getVitalSeverity('systolic', vital.systolic) !== 'normal' ||
+                        getVitalSeverity('diastolic', vital.diastolic) !== 'normal'
+                          ? 'abnormal'
+                          : 'normal'
+                      }`}
                     >
+                      {(getVitalSeverity('systolic', vital.systolic) !== 'normal' ||
+                        getVitalSeverity('diastolic', vital.diastolic) !== 'normal') &&
+                        '⚠ '}
                       {vital.systolic}/{vital.diastolic}
                     </TableCell>
-                    <TableCell sx={vitalCellSx('heartRate', vital.heartRate)}>{vital.heartRate}</TableCell>
-                    <TableCell sx={vitalCellSx('respiratoryRate', vital.respiratoryRate)}>
+                    <TableCell
+                      sx={vitalCellSx('heartRate', vital.heartRate)}
+                      aria-label={vitalCellAriaLabel('heartRate', vital.heartRate, ' bpm')}
+                    >
+                      {severityPrefix(getVitalSeverity('heartRate', vital.heartRate))}
+                      {vital.heartRate}
+                    </TableCell>
+                    <TableCell
+                      sx={vitalCellSx('respiratoryRate', vital.respiratoryRate)}
+                      aria-label={vitalCellAriaLabel(
+                        'respiratoryRate',
+                        vital.respiratoryRate,
+                        ' per minute',
+                      )}
+                    >
+                      {severityPrefix(getVitalSeverity('respiratoryRate', vital.respiratoryRate))}
                       {vital.respiratoryRate}
                     </TableCell>
-                    <TableCell sx={vitalCellSx('spo2', vital.spo2)}>{vital.spo2}%</TableCell>
-                    <TableCell sx={vitalCellSx('painScore', vital.painScore)}>{vital.painScore}</TableCell>
+                    <TableCell
+                      sx={vitalCellSx('spo2', vital.spo2)}
+                      aria-label={vitalCellAriaLabel('spo2', vital.spo2, '%')}
+                    >
+                      {severityPrefix(getVitalSeverity('spo2', vital.spo2))}
+                      {vital.spo2}%
+                    </TableCell>
+                    <TableCell
+                      sx={vitalCellSx('painScore', vital.painScore)}
+                      aria-label={vitalCellAriaLabel('painScore', vital.painScore, ' out of 10')}
+                    >
+                      {severityPrefix(getVitalSeverity('painScore', vital.painScore))}
+                      {vital.painScore}
+                    </TableCell>
                     <TableCell>{vital.position}</TableCell>
-                    <TableCell sx={{ color: '#999' }}>{vital.documentedBy}</TableCell>
+                    <TableCell sx={{ color: '#6B6B6B' }}>{vital.documentedBy}</TableCell>
                     <TableCell>
                       <EditMenu
                         entry={vital}
@@ -309,6 +353,8 @@ const FlowsheetsTab: React.FC<FlowsheetsTabProps> = ({ patient }) => {
                 value={form.painScore}
                 onChange={(_, val) => setForm({ ...form, painScore: val as number })}
                 marks
+                aria-label="Pain score, 0 to 10"
+                aria-valuetext={`${form.painScore} out of 10`}
               />
             </Grid>
 

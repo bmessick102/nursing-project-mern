@@ -239,7 +239,7 @@ const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
                           {lab.name}
                           {lab.markedInError && <InErrorBanner entry={lab} compact />}
                           {lab.lastModifiedAt && !lab.markedInError && (
-                            <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
+                            <Typography variant="caption" sx={{ color: '#6B6B6B', fontStyle: 'italic' }}>
                               (edited)
                             </Typography>
                           )}
@@ -248,7 +248,7 @@ const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
                       <TableCell>
                         {lab.value} {lab.unit}
                       </TableCell>
-                      <TableCell sx={{ color: '#999' }}>{lab.referenceRange}</TableCell>
+                      <TableCell sx={{ color: '#6B6B6B' }}>{lab.referenceRange}</TableCell>
                       <TableCell>
                         {lab.flag ? (
                           <Chip
@@ -261,12 +261,12 @@ const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
                             }}
                           />
                         ) : (
-                          <Typography variant="caption" sx={{ color: '#999' }}>
+                          <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
                             —
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell sx={{ color: '#999' }}>
+                      <TableCell sx={{ color: '#6B6B6B' }}>
                         {new Date(lab.date).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
@@ -298,6 +298,7 @@ const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.category}
+                aria-label="Category"
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               >
                 {CATEGORIES.map((c) => (
@@ -366,9 +367,8 @@ const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.flag}
-                onChange={(e) =>
-                  setForm({ ...form, flag: e.target.value as '' | 'H' | 'L' | 'C' })
-                }
+                aria-label="Flag"
+                onChange={(e) => setForm({ ...form, flag: e.target.value as '' | 'H' | 'L' | 'C' })}
               >
                 <MenuItem value="">(none)</MenuItem>
                 <MenuItem value="H">H — High</MenuItem>

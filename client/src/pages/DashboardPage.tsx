@@ -74,11 +74,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             <Typography component="span" className={styles.patientEyebrow}>
               Active Patient
             </Typography>
-            <Typography variant="h6" className={styles.patientName}>
+            <Typography
+              component="h1"
+              variant="h6"
+              className={styles.patientName}
+              data-phi="true"
+            >
               {selectedPatient?.name}
             </Typography>
             <Typography variant="body2" className={styles.patientDetails}>
-              Room {selectedPatient?.roomNumber} • {selectedCourse?.name}
+              Room <span data-phi="true">{selectedPatient?.roomNumber}</span> • {selectedCourse?.name}
             </Typography>
           </Box>
           <Box className={styles.actions}>
@@ -104,9 +109,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         <Box className={styles.breadcrumb}>
           <Home fontSize="inherit" sx={{ fontSize: 14 }} />
           <span className={styles.breadcrumbItem}>School of Nursing</span>
-          <ChevronRight sx={{ fontSize: 14, color: '#B1B3B3' }} />
+          <ChevronRight sx={{ fontSize: 14, color: '#6B6B6B' }} />
           <span className={styles.breadcrumbItem}>{selectedCourse?.name}</span>
-          <ChevronRight sx={{ fontSize: 14, color: '#B1B3B3' }} />
+          <ChevronRight sx={{ fontSize: 14, color: '#6B6B6B' }} />
           <span className={styles.breadcrumbCurrent}>
             {selectedPatient?.name}
           </span>

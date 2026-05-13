@@ -217,7 +217,7 @@ const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
               </Typography>
               {Object.entries(groupedEncounters).map(([group, groupEnc]) => (
                 <Box key={group} sx={{ mb: 2 }}>
-                  <Typography variant="caption" sx={{ color: '#999', fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: '#6B6B6B', fontWeight: 600 }}>
                     {group}
                   </Typography>
                   {groupEnc.map((enc) => (
@@ -251,7 +251,7 @@ const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
                         <Typography variant="caption" sx={{ color: '#666' }}>
                           {new Date(enc.date).toLocaleDateString()} • {enc.provider}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#999', display: 'block', mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ color: '#6B6B6B', display: 'block', mt: 0.5 }}>
                           {enc.specialty}
                         </Typography>
                       </CardActionArea>
@@ -291,7 +291,7 @@ const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
                   <strong>Diagnosis:</strong> {encounter.diagnosis}
                 </Typography>
                 {encounter.lastModifiedAt && (
-                  <Typography variant="caption" sx={{ color: '#999', mt: 0.5, fontStyle: 'italic', display: 'block' }}>
+                  <Typography variant="caption" sx={{ color: '#6B6B6B', mt: 0.5, fontStyle: 'italic', display: 'block' }}>
                     Modified by {encounter.lastModifiedBy} at {new Date(encounter.lastModifiedAt).toLocaleString()}
                   </Typography>
                 )}
@@ -370,6 +370,7 @@ const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.type}
+                aria-label="Encounter Type"
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
               >
                 {ENCOUNTER_TYPES.map((t) => (
@@ -397,6 +398,7 @@ const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.specialty}
+                aria-label="Specialty"
                 onChange={(e) => setForm({ ...form, specialty: e.target.value })}
               >
                 {SPECIALTIES.map((s) => (

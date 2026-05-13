@@ -89,7 +89,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
       case 'active':
         return '#003D82'
       case 'completed':
-        return '#999'
+        return '#6B6B6B'
       case 'discontinued':
         return '#d32f2f'
       default:
@@ -288,7 +288,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                 Discharge Instructions
               </Typography>
               {patient.dischargeSummary.instructions.length === 0 ? (
-                <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
+                <Typography variant="body2" sx={{ color: '#6B6B6B', fontStyle: 'italic' }}>
                   No instructions documented.
                 </Typography>
               ) : (
@@ -304,7 +304,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
           ) : (
             <Box className={styles.emptyState}>
               <Typography>No discharge summary yet.</Typography>
-              <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#999' }}>
+              <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6B6B6B' }}>
                 Click "Add Discharge Summary" to create one.
               </Typography>
             </Box>
@@ -365,7 +365,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                   </Button>
                 </Stack>
                 {dischargeForm.instructions.length === 0 ? (
-                  <Typography variant="caption" sx={{ color: '#999' }}>
+                  <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
                     No instructions yet.
                   </Typography>
                 ) : (
@@ -421,7 +421,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
         {filteredOrders.length === 0 ? (
           <Box className={styles.emptyState}>
             <Typography>No {TAB_LABELS[tabValue].toLowerCase()} orders</Typography>
-            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#999' }}>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6B6B6B' }}>
               Click "Add Order" to document the first one.
             </Typography>
           </Box>
@@ -447,7 +447,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                         {order.name}
                         {order.markedInError && <InErrorBanner entry={order} compact />}
                         {order.lastModifiedAt && !order.markedInError && (
-                          <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
+                          <Typography variant="caption" sx={{ color: '#6B6B6B', fontStyle: 'italic' }}>
                             (edited)
                           </Typography>
                         )}
@@ -466,7 +466,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                               ? '#d32f2f'
                               : order.priority === 'urgent'
                               ? '#FF9800'
-                              : '#999',
+                              : '#6B6B6B',
                           color: 'white',
                           fontWeight: 600,
                         }}
@@ -484,7 +484,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                       />
                     </TableCell>
                     <TableCell sx={{ color: '#666' }}>{order.orderedBy}</TableCell>
-                    <TableCell sx={{ color: '#999' }}>
+                    <TableCell sx={{ color: '#6B6B6B' }}>
                       {new Date(order.date).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
@@ -540,6 +540,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.status}
+                aria-label="Status"
                 onChange={(e) => setForm({ ...form, status: e.target.value as Order['status'] })}
               >
                 <MenuItem value="active">Active</MenuItem>
@@ -555,9 +556,8 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.priority}
-                onChange={(e) =>
-                  setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })
-                }
+                aria-label="Priority"
+                onChange={(e) => setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })}
               >
                 <MenuItem value="routine">Routine</MenuItem>
                 <MenuItem value="urgent">Urgent</MenuItem>
@@ -631,6 +631,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.status}
+                aria-label="Status"
                 onChange={(e) => setForm({ ...form, status: e.target.value as Order['status'] })}
               >
                 <MenuItem value="active">Active</MenuItem>
@@ -646,9 +647,8 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.priority}
-                onChange={(e) =>
-                  setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })
-                }
+                aria-label="Priority"
+                onChange={(e) => setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })}
               >
                 <MenuItem value="routine">Routine</MenuItem>
                 <MenuItem value="urgent">Urgent</MenuItem>

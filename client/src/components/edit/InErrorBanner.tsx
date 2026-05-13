@@ -46,7 +46,7 @@ const InErrorBanner: React.FC<InErrorBannerProps> = ({ entry, compact }) => {
       <Typography variant="caption" sx={{ display: 'block', color: '#666', mt: 0.5 }}>
         Reason: {entry.markedInErrorReason || '(no reason given)'}
       </Typography>
-      <Typography variant="caption" sx={{ display: 'block', color: '#999' }}>
+      <Typography variant="caption" sx={{ display: 'block', color: '#6B6B6B' }}>
         Flagged by {entry.markedInErrorBy} on{' '}
         {entry.markedInErrorAt ? new Date(entry.markedInErrorAt).toLocaleString() : '—'}
       </Typography>

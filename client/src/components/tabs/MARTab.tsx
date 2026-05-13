@@ -208,13 +208,13 @@ const MARTab: React.FC<MARTabProps> = ({ patient }) => {
       case 'given':
         return '#4CAF50'
       case 'due':
-        return '#999'
+        return '#6B6B6B'
       case 'overdue':
         return '#FF9800'
       case 'held':
         return '#d32f2f'
       default:
-        return '#999'
+        return '#6B6B6B'
     }
   }
 
@@ -230,11 +230,22 @@ const MARTab: React.FC<MARTabProps> = ({ patient }) => {
         onAction={handleAddOpen}
       />
 
+      <Typography
+        variant="caption"
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          color: '#595959',
+          mb: 1,
+          fontStyle: 'italic',
+        }}
+      >
+        Tip: scroll horizontally to see all administration times →
+      </Typography>
       <Paper className={styles.section} sx={{ overflow: 'auto' }}>
         {marEntries.length === 0 ? (
           <Box className={styles.emptyState}>
             <Typography>No medications scheduled.</Typography>
-            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#999' }}>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6B6B6B' }}>
               Click "Add Medication" to start the MAR.
             </Typography>
           </Box>
@@ -266,7 +277,7 @@ const MARTab: React.FC<MARTabProps> = ({ patient }) => {
                         {mar.medicationName}
                         {mar.markedInError && <InErrorBanner entry={mar} compact />}
                         {mar.lastModifiedAt && !mar.markedInError && (
-                          <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
+                          <Typography variant="caption" sx={{ color: '#6B6B6B', fontStyle: 'italic' }}>
                             (edited)
                           </Typography>
                         )}
@@ -378,6 +389,7 @@ const MARTab: React.FC<MARTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.route}
+                aria-label="Route"
                 onChange={(e) => setForm({ ...form, route: e.target.value })}
               >
                 {ROUTES.map((r) => (
@@ -395,6 +407,7 @@ const MARTab: React.FC<MARTabProps> = ({ patient }) => {
                 fullWidth
                 size="small"
                 value={form.frequency}
+                aria-label="Frequency"
                 onChange={(e) => setForm({ ...form, frequency: e.target.value })}
               >
                 {FREQUENCIES.map((f) => (

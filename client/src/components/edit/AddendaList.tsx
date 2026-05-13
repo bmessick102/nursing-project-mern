@@ -13,7 +13,7 @@ const AddendaList: React.FC<AddendaListProps> = ({ addenda }) => {
   return (
     <Box sx={{ mt: 2 }}>
       <Divider sx={{ mb: 1 }}>
-        <Typography variant="caption" sx={{ color: '#999', fontWeight: 600 }}>
+        <Typography variant="caption" sx={{ color: '#6B6B6B', fontWeight: 600 }}>
           ADDENDA ({addenda.length})
         </Typography>
       </Divider>
@@ -29,7 +29,7 @@ const AddendaList: React.FC<AddendaListProps> = ({ addenda }) => {
               <Typography variant="caption" sx={{ fontWeight: 600, color: '#003D82' }}>
                 Addendum
               </Typography>
-              <Typography variant="caption" sx={{ color: '#999' }}>
+              <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
                 {new Date(a.timestamp).toLocaleString()} — {a.author}
                 {a.authorRole ? ` (${a.authorRole})` : ''}
               </Typography>

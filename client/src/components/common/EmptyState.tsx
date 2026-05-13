@@ -13,7 +13,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ message, actionHint }) => {
       <Box className={styles.emptyState}>
         <Typography variant="body2">{message}</Typography>
         {actionHint && (
-          <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#999' }}>
+          <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6B6B6B' }}>
             {actionHint}
           </Typography>
         )}

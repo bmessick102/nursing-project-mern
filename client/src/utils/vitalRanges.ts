@@ -66,3 +66,28 @@ export const vitalCellSx = (metric: VitalMetric, value: number) => {
     fontWeight: 700,
   }
 }
+
+// Non-color signifier prefix for cells. WCAG 1.4.1 — do not rely on color alone.
+export const severityPrefix = (sev: Severity): string =>
+  sev === 'critical' ? '⚠ ' : sev === 'borderline' ? '↑ ' : ''
+
+// Returns an aria-label describing the cell so screen-reader users hear
+// "critical heart rate 142" rather than just "142".
+export const vitalCellAriaLabel = (
+  metric: VitalMetric,
+  value: number,
+  unit = '',
+): string => {
+  const sev = getVitalSeverity(metric, value)
+  const name: Record<VitalMetric, string> = {
+    temp: 'Temperature',
+    systolic: 'Systolic BP',
+    diastolic: 'Diastolic BP',
+    heartRate: 'Heart rate',
+    respiratoryRate: 'Respiratory rate',
+    spo2: 'Oxygen saturation',
+    painScore: 'Pain score',
+  }
+  if (sev === 'normal') return `${name[metric]} ${value}${unit}`
+  return `${sev} ${name[metric]} ${value}${unit}`
+}

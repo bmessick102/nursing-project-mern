@@ -230,7 +230,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
                         <Typography variant="body2" sx={{ fontWeight: 600, color: '#003D82' }}>
                           {note.author}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#999' }}>
+                        <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
                           {note.authorRole}
                         </Typography>
                       </Box>
@@ -239,7 +239,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
                     <Typography variant="caption" sx={{ color: '#666' }}>
                       {note.date} • {note.time}
                     </Typography>
-                    <Typography variant="caption" sx={{ display: 'block', color: '#999', mt: 0.5 }}>
+                    <Typography variant="caption" sx={{ display: 'block', color: '#6B6B6B', mt: 0.5 }}>
                       {note.type}
                     </Typography>
                   </CardActionArea>
@@ -264,11 +264,11 @@ const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
                     <Typography variant="body2" sx={{ color: '#666', mt: 0.5 }}>
                       <strong>{activeNote.author}</strong> • {activeNote.authorRole}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#999' }}>
+                    <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
                       {activeNote.date} at {activeNote.time}
                     </Typography>
                     {activeNote.lastModifiedAt && (
-                      <Typography variant="caption" sx={{ display: 'block', color: '#999', mt: 0.5, fontStyle: 'italic' }}>
+                      <Typography variant="caption" sx={{ display: 'block', color: '#6B6B6B', mt: 0.5, fontStyle: 'italic' }}>
                         Modified by {activeNote.lastModifiedBy} at{' '}
                         {new Date(activeNote.lastModifiedAt).toLocaleString()}
                       </Typography>

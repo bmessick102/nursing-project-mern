@@ -186,6 +186,19 @@ const theme = createTheme({
         },
       },
     },
+    // WCAG 2.5.8 (Level AA, WCAG 2.2): min 24x24, recommended 44x44 for touch.
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          minWidth: 44,
+          minHeight: 44,
+        },
+        sizeSmall: {
+          minWidth: 36,
+          minHeight: 36,
+        },
+      },
+    },
     MuiTableHead: {
       styleOverrides: {
         root: {

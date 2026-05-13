@@ -14,7 +14,7 @@ import {
   InputAdornment,
   Stack,
 } from '@mui/material'
-import { Search } from '@mui/icons-material'
+import { Search, Warning as WarningIcon } from '@mui/icons-material'
 import type { Patient } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useAppStore } from 'store/useAppStore'
@@ -193,13 +193,16 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
                           {patient.allergies.map((allergy, idx) => (
                             <Chip
                               key={idx}
+                              icon={<WarningIcon fontSize="small" />}
                               label={allergy}
                               size="small"
+                              aria-label={`Allergy: ${allergy}`}
                               sx={{
                                 mr: 1,
                                 color: '#B71C1C',
                                 borderColor: '#B71C1C',
                                 fontWeight: 600,
+                                '& .MuiChip-icon': { color: '#B71C1C' },
                               }}
                               variant="outlined"
                             />
