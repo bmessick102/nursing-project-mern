@@ -230,16 +230,16 @@ const findByCourse = (courseId: string): Patient[] => {
 const create = (data: Omit<Patient, '_id' | 'createdAt' | 'updatedAt'>) => {
   const patients = fileDb.readCollection(COLLECTION)
   const newPatient: Patient = {
-    vitals: [],
-    labs: [],
-    encounters: [],
-    nursingNotes: [],
-    marEntries: [],
-    ioEntries: [],
-    orders: [],
-    assessments: [],
-    bradenScores: [],
     ...data,
+    vitals: data.vitals ?? [],
+    labs: data.labs ?? [],
+    encounters: data.encounters ?? [],
+    nursingNotes: data.nursingNotes ?? [],
+    marEntries: data.marEntries ?? [],
+    ioEntries: data.ioEntries ?? [],
+    orders: data.orders ?? [],
+    assessments: data.assessments ?? [],
+    bradenScores: data.bradenScores ?? [],
     _id: fileDb.generateId(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -337,7 +337,7 @@ const initializeDefaultPatients = () => {
             unit: '%',
             referenceRange: '<5.7',
             date: new Date(baseDate.getTime()).toISOString(),
-            flag: 'H',
+            flag: 'H' as const,
           },
           {
             _id: fileDb.generateId(),
@@ -347,7 +347,7 @@ const initializeDefaultPatients = () => {
             unit: 'mg/dL',
             referenceRange: '70-100',
             date: new Date(baseDate.getTime()).toISOString(),
-            flag: 'H',
+            flag: 'H' as const,
           },
           {
             _id: fileDb.generateId(),
@@ -705,7 +705,9 @@ const initializeDefaultPatients = () => {
         orders: [],
       },
     ]
-    defaultPatients.forEach((patient) => create(patient))
+    defaultPatients.forEach((patient) =>
+      create(patient as unknown as Omit<Patient, '_id' | 'createdAt' | 'updatedAt'>),
+    )
   }
 }
 
