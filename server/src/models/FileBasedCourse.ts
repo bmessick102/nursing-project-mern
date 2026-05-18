@@ -1,44 +1,123 @@
 import fileDb from '../utils/fileDb'
-
-export interface Course {
-  _id: string
-  name: string
-  code: string
-  instructor: string
-  description: string
-  createdAt: string
-  updatedAt: string
-}
+import { generateCourseCode, timingSafeCodeEqual } from '../utils/courseCode'
+import { type Course } from '../@types'
 
 const COLLECTION = 'courses'
 
-const findAll = (): Course[] => {
-  return fileDb.readCollection(COLLECTION) as Course[]
+// Backfill `inviteCode` and `enrolledAccountIds` on existing rows so legacy
+// data from before this feature keeps working without a destructive rewrite.
+const normalizeCourse = (raw: any): Course => ({
+  _id: raw._id,
+  name: raw.name,
+  code: raw.code,
+  instructor: raw.instructor,
+  description: raw.description,
+  inviteCode: raw.inviteCode || generateCourseCode(raw.code),
+  enrolledAccountIds: Array.isArray(raw.enrolledAccountIds) ? raw.enrolledAccountIds : [],
+  createdAt: raw.createdAt || new Date().toISOString(),
+  updatedAt: raw.updatedAt || new Date().toISOString(),
+})
+
+const readAll = (): Course[] => {
+  const raw = fileDb.readCollection(COLLECTION) as any[]
+  let mutated = false
+  const normalized: Course[] = raw.map((r) => {
+    const n = normalizeCourse(r)
+    if (!r.inviteCode || !Array.isArray(r.enrolledAccountIds)) mutated = true
+    return n
+  })
+  if (mutated) fileDb.writeCollection(COLLECTION, normalized)
+  return normalized
 }
+
+const findAll = (): Course[] => readAll()
 
 const findById = (id: string): Course | undefined => {
-  const courses = fileDb.readCollection(COLLECTION) as Course[]
-  return courses.find((c: Course) => c._id === id)
+  return readAll().find((c) => c._id === id)
 }
 
-const create = (data: Omit<Course, '_id' | 'createdAt' | 'updatedAt'>) => {
-  const courses = fileDb.readCollection(COLLECTION)
+const findByInviteCode = (submittedCode: string): Course | undefined => {
+  const code = (submittedCode || '').trim()
+  if (!code) return undefined
+  // traverse full list with timing-safe comparison (defense in depth)
+  let match: Course | undefined
+  for (const c of readAll()) {
+    if (timingSafeCodeEqual(c.inviteCode, code) && !match) match = c
+  }
+  return match
+}
+
+const create = (
+  data: Omit<Course, '_id' | 'createdAt' | 'updatedAt' | 'inviteCode' | 'enrolledAccountIds'> & {
+    inviteCode?: string
+    enrolledAccountIds?: string[]
+  },
+): Course => {
+  const courses = readAll()
+  const now = new Date().toISOString()
   const newCourse: Course = {
-    ...data,
     _id: fileDb.generateId(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    name: data.name,
+    code: data.code,
+    instructor: data.instructor,
+    description: data.description,
+    inviteCode: data.inviteCode || generateCourseCode(data.code),
+    enrolledAccountIds: data.enrolledAccountIds || [],
+    createdAt: now,
+    updatedAt: now,
   }
   courses.push(newCourse)
   fileDb.writeCollection(COLLECTION, courses)
   return newCourse
 }
 
-const initializeDefaultCourses = () => {
-  const courses = fileDb.readCollection(COLLECTION)
-  if (courses.length === 0) {
+const update = (id: string, patch: Partial<Course>): Course | undefined => {
+  const courses = readAll()
+  const idx = courses.findIndex((c) => c._id === id)
+  if (idx === -1) return undefined
+  courses[idx] = {
+    ...courses[idx],
+    ...patch,
+    _id: courses[idx]._id,
+    updatedAt: new Date().toISOString(),
+  }
+  fileDb.writeCollection(COLLECTION, courses)
+  return courses[idx]
+}
+
+const regenerateCode = (id: string): Course | undefined => {
+  const courses = readAll()
+  const idx = courses.findIndex((c) => c._id === id)
+  if (idx === -1) return undefined
+  courses[idx] = {
+    ...courses[idx],
+    inviteCode: generateCourseCode(courses[idx].code),
+    updatedAt: new Date().toISOString(),
+  }
+  fileDb.writeCollection(COLLECTION, courses)
+  return courses[idx]
+}
+
+const addEnrollment = (id: string, accountId: string): Course | undefined => {
+  const courses = readAll()
+  const idx = courses.findIndex((c) => c._id === id)
+  if (idx === -1) return undefined
+  if (!courses[idx].enrolledAccountIds.includes(accountId)) {
+    courses[idx].enrolledAccountIds = [...courses[idx].enrolledAccountIds, accountId]
+    courses[idx].updatedAt = new Date().toISOString()
+    fileDb.writeCollection(COLLECTION, courses)
+  }
+  return courses[idx]
+}
+
+const findEnrolledFor = (accountId: string): Course[] =>
+  readAll().filter((c) => c.enrolledAccountIds.includes(accountId))
+
+const initializeDefaultCourses = (): Course[] => {
+  const existing = readAll()
+  if (existing.length === 0) {
     console.log('Initializing default courses...')
-    const defaultCourses = [
+    const defaults = [
       {
         name: 'Adult Health Nursing',
         code: 'NURS201',
@@ -58,13 +137,19 @@ const initializeDefaultCourses = () => {
         description: 'Intensive care unit nursing',
       },
     ]
-    defaultCourses.forEach((course) => create(course))
+    defaults.forEach((c) => create(c))
   }
+  return readAll()
 }
 
 export default {
   findAll,
   findById,
+  findByInviteCode,
   create,
+  update,
+  regenerateCode,
+  addEnrollment,
+  findEnrolledFor,
   initializeDefaultCourses,
 }

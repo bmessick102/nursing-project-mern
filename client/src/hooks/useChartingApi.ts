@@ -368,6 +368,200 @@ export const useChartingApi = () => {
     [],
   )
 
+  // --- Course enrollment (student) ---
+
+  const fetchMyCourses = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data } = await axios.get('/courses/mine')
+      return data.data as Course[]
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || err.message
+      reportError(errorMsg)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [reportError])
+
+  const joinCourse = useCallback(
+    async (code: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post('/courses/join', { code })
+        return data.data as { course: Course; account: Patient extends never ? never : any }
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  // --- Admin endpoints ---
+
+  const adminCreateCourse = useCallback(
+    async (payload: { name: string; code: string; instructor: string; description: string }) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post('/admin/courses', payload)
+        return data.data as Course
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminUpdateCourse = useCallback(
+    async (id: string, patch: Partial<Course>) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.patch(`/admin/courses/${id}`, patch)
+        return data.data as Course
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminRegenerateCourseCode = useCallback(
+    async (id: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post(`/admin/courses/${id}/regenerate-code`)
+        return data.data as Course
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminCreatePatient = useCallback(
+    async (payload: {
+      courseId: string
+      name: string
+      age: number
+      gender: string
+      roomNumber: string
+      diagnosis: string[]
+      allergies: string[]
+      medications?: { name: string; dose: string; frequency: string }[]
+    }) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post('/admin/patients', payload)
+        return data.data as Patient
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminCreateAccount = useCallback(
+    async (payload: {
+      username: string
+      password: string
+      role: 'student' | 'instructor' | 'administrator'
+      firstName?: string
+      lastName?: string
+      email?: string
+    }) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post('/admin/accounts', payload)
+        return data.data
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminUpdateAccount = useCallback(
+    async (
+      id: string,
+      patch: {
+        role?: 'student' | 'instructor' | 'administrator'
+        active?: boolean
+        firstName?: string
+        lastName?: string
+        email?: string
+      },
+    ) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.patch(`/admin/accounts/${id}`, patch)
+        return data.data
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminListAccounts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data } = await axios.get('/admin/accounts')
+      return data.data as Array<{
+        _id: string
+        username: string
+        role: string
+        firstName?: string
+        lastName?: string
+        email?: string
+        enrolledCourseIds?: string[]
+        createdAt?: string
+      }>
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || err.message
+      reportError(errorMsg)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [reportError])
+
   return {
     loading,
     error,
@@ -388,5 +582,14 @@ export const useChartingApi = () => {
     markResourceInError,
     addOrder,
     updatePatientFields,
+    fetchMyCourses,
+    joinCourse,
+    adminCreateCourse,
+    adminUpdateCourse,
+    adminRegenerateCourseCode,
+    adminCreatePatient,
+    adminListAccounts,
+    adminCreateAccount,
+    adminUpdateAccount,
   }
 }

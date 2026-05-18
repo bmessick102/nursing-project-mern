@@ -34,7 +34,6 @@ const AuthModal: React.FC<Props> = () => {
           firstName: '',
           lastName: '',
           email: '',
-          inviteCode: '',
         })
       } else {
         await login(formData)

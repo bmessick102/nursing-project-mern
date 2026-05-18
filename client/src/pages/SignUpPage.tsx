@@ -11,9 +11,8 @@ import {
   InputAdornment,
   Grid,
   Link as MuiLink,
-  Tooltip,
 } from '@mui/material'
-import { Visibility, VisibilityOff, VpnKey, HelpOutline } from '@mui/icons-material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuth } from 'contexts/AuthContext'
 import UtilityBar from 'components/UtilityBar'
 import Footer from 'components/Footer'
@@ -32,9 +31,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showCode, setShowCode] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -43,7 +40,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
   }
 
   const emailIsValid = email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-  const codeIsValidFormat = inviteCode.trim().length >= 8
 
   const canSubmit =
     !!firstName.trim() &&
@@ -54,7 +50,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
     password.length >= 12 &&
     password === confirmPassword &&
     emailIsValid &&
-    codeIsValidFormat &&
     !loading
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -65,7 +60,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
       setError('Passwords do not match.')
       return
     }
-    if (password.length < 6) {
+    if (password.length < 12) {
       setError('Password must be at least 12 characters (HIPAA recommendation).')
       return
     }
@@ -77,10 +72,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
       setError('Please enter a valid email address (or leave blank).')
       return
     }
-    if (!codeIsValidFormat) {
-      setError('Please enter your special code.')
-      return
-    }
 
     setLoading(true)
     try {
@@ -90,9 +81,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
-        inviteCode: inviteCode.trim(),
       })
-      // On success the AuthContext sets isLoggedIn=true; App will route forward.
     } catch (err: any) {
       setError(err || 'Sign up failed. Please try again.')
     } finally {
@@ -135,7 +124,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
 
               <Alert
                 severity="info"
-                icon={<VpnKey fontSize="inherit" />}
                 sx={{
                   mb: 1,
                   backgroundColor: '#FFFBF0',
@@ -144,8 +132,9 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
                   '& .MuiAlert-icon': { color: '#7A4F00' },
                 }}
               >
-                A <strong>special invite code</strong> is required to register. Your instructor or
-                administrator will provide one — it determines your access level.
+                Public signup creates a <strong>student</strong> account. After signing in
+                you&rsquo;ll join a class using a course code your instructor provides.
+                Instructor and administrator accounts are created by an administrator.
               </Alert>
 
               <Grid container spacing={2}>
@@ -246,46 +235,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
                         : ' '
                     }
                     required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Special Code"
-                    placeholder="CUW-NURS-..."
-                    type={showCode ? 'text' : 'password'}
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
-                    disabled={loading}
-                    variant="outlined"
-                    autoComplete="off"
-                    required
-                    inputProps={{ spellCheck: false, autoCapitalize: 'off' }}
-                    helperText="Provided by your instructor or administrator"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <VpnKey fontSize="small" sx={{ color: '#003D82' }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Tooltip title="Your administrator distributes these codes. Each code grants a specific access level (Student / Instructor / Administrator).">
-                            <IconButton edge="end" size="small" disabled={loading}>
-                              <HelpOutline fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <IconButton
-                            onClick={() => setShowCode(!showCode)}
-                            edge="end"
-                            disabled={loading}
-                            aria-label="toggle special code visibility"
-                          >
-                            {showCode ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
                   />
                 </Grid>
               </Grid>

@@ -12,6 +12,20 @@ export interface Account {
   firstName?: string
   lastName?: string
   email?: string
+  enrolledCourseIds?: string[]
+  active?: boolean
+}
+
+export interface Course {
+  _id: string
+  name: string
+  code: string
+  instructor: string
+  description: string
+  inviteCode: string
+  enrolledAccountIds: string[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface InviteCodeUse {

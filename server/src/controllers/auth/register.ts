@@ -3,14 +3,6 @@ import joi from '../../utils/joi'
 import jwt from '../../utils/jwt'
 import crypt from '../../utils/crypt'
 import Account from '../../models/FileBasedAccount'
-import InviteCode from '../../models/FileBasedInviteCode'
-
-const INVITE_ERROR_MESSAGES: Record<string, string> = {
-  not_found: 'Invalid invite code. Contact your administrator for a valid code.',
-  inactive: 'This invite code has been revoked. Contact your administrator.',
-  expired: 'This invite code has expired. Contact your administrator.',
-  exhausted: 'This invite code has reached its maximum uses. Contact your administrator.',
-}
 
 const register: RequestHandler = async (req, res, next) => {
   try {
@@ -21,7 +13,8 @@ const register: RequestHandler = async (req, res, next) => {
         firstName: joi.instance.string().min(1).max(80).optional(),
         lastName: joi.instance.string().min(1).max(80).optional(),
         email: joi.instance.string().email().optional(),
-        inviteCode: joi.instance.string().min(8).max(120).required(),
+        // inviteCode is accepted but ignored for back-compat with older clients.
+        inviteCode: joi.instance.string().optional(),
       },
       req.body,
     )
@@ -36,28 +29,15 @@ const register: RequestHandler = async (req, res, next) => {
       firstName,
       lastName,
       email,
-      inviteCode,
     }: {
       username: string
       password: string
       firstName?: string
       lastName?: string
       email?: string
-      inviteCode: string
     } = req.body
 
-    // 1. Validate invite code FIRST (before any account work).
-    // This prevents account-existence probing and ensures role can't be forged.
-    const validation = InviteCode.validate(inviteCode)
-    if (!validation.ok) {
-      return next({
-        statusCode: 400,
-        message: INVITE_ERROR_MESSAGES[validation.reason] || 'Invalid invite code.',
-      })
-    }
-    const validCode = validation.code
-
-    // 2. Verify account username as unique
+    // Verify account username as unique
     const foundByUsername = Account.findOne({ username })
     if (foundByUsername) {
       return next({
@@ -66,7 +46,7 @@ const register: RequestHandler = async (req, res, next) => {
       })
     }
 
-    // 3. Optionally verify email uniqueness
+    // Optionally verify email uniqueness
     if (email) {
       const foundByEmail = Account.findOne({ email })
       if (foundByEmail) {
@@ -77,31 +57,28 @@ const register: RequestHandler = async (req, res, next) => {
       }
     }
 
-    // 4. Hash password
+    // Hash password
     const hash = await crypt.hash(password)
 
-    // 5. Create account — role is ALWAYS taken from the invite code, never req.body.
-    // This blocks privilege escalation: a student code cannot create an administrator account.
+    // Public self-signup is locked to the 'student' role.
+    // Administrator and instructor accounts are created only by an existing
+    // administrator via the admin console — this remains the only privilege-escalation
+    // path even though we no longer gate signup with an invite code.
     const account = Account.create({
       username,
       password: hash,
-      role: validCode.role,
+      role: 'student',
       firstName,
       lastName,
       email,
+      enrolledCourseIds: [],
+      active: true,
     })
 
-    // 6. Atomically consume the invite code (increment useCount, record use).
-    InviteCode.consume(validCode._id, {
-      accountId: account._id,
-      username: account.username,
-      usedAt: new Date().toISOString(),
-    })
-
-    // 7. Issue access token
+    // Issue access token
     const token = jwt.signToken({ uid: account._id, role: account.role })
 
-    // 8. Strip password from response
+    // Strip password from response
     const { password: _, ...data } = account
 
     res.status(201).json({

@@ -19,8 +19,8 @@
     "useCount": 0,
     "createdBy": "system",
     "createdAt": "2026-05-12T00:00:00.000Z",
-    "note": "Sample instructor invite — clinical faculty",
-    "active": true,
+    "note": "Disabled — non-student signup is administrator-managed only.",
+    "active": false,
     "usedBy": []
   },
   {
@@ -31,8 +31,8 @@
     "useCount": 0,
     "createdBy": "system",
     "createdAt": "2026-05-12T00:00:00.000Z",
-    "note": "Sample administrator invite — restricted",
-    "active": true,
+    "note": "Disabled — non-student signup is administrator-managed only.",
+    "active": false,
     "usedBy": []
   }
 ]

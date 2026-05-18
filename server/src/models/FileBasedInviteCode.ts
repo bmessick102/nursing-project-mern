@@ -101,8 +101,8 @@ const initializeDefaultCodes = () => {
         useCount: 0,
         createdBy: 'system',
         createdAt: now,
-        note: 'Sample instructor invite — clinical faculty',
-        active: true,
+        note: 'Disabled — instructor accounts are created by an administrator.',
+        active: false,
         usedBy: [],
       },
       {
@@ -112,13 +112,36 @@ const initializeDefaultCodes = () => {
         useCount: 0,
         createdBy: 'system',
         createdAt: now,
-        note: 'Sample administrator invite — restricted',
-        active: true,
+        note: 'Disabled — admin accounts are seeded only.',
+        active: false,
         usedBy: [],
       },
     ]
     for (const seed of seeds) create(seed)
-    console.log('✅ Seeded 3 default invite codes (student / instructor / administrator).')
+    console.log('✅ Seeded 3 default signup invite codes (only student code is active).')
+  } else {
+    // Defense in depth: even if data file was edited by hand, force admin/instructor
+    // signup codes to active:false. Won't touch unrelated codes added by an admin.
+    let mutated = false
+    const updated = codes.map((c) => {
+      if (
+        (c.role === 'administrator' || c.role === 'instructor') &&
+        c.createdBy === 'system' &&
+        c.active
+      ) {
+        mutated = true
+        return {
+          ...c,
+          active: false,
+          note: 'Disabled — non-student signup is administrator-managed only.',
+        }
+      }
+      return c
+    })
+    if (mutated) {
+      fileDb.writeCollection(COLLECTION, updated)
+      console.log('⚠️  Deactivated legacy administrator/instructor signup invite codes.')
+    }
   }
 }
 

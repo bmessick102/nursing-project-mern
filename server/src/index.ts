@@ -6,6 +6,7 @@ import fileStorage from './utils/fileStorage' // (database)
 import authRoutes from './routes/auth'
 import courseRoutes from './routes/courses'
 import patientRoutes from './routes/patients'
+import adminRoutes from './routes/admin'
 import Account from './models/FileBasedAccount'
 import Course from './models/FileBasedCourse'
 import Patient from './models/FileBasedPatient'
@@ -15,10 +16,19 @@ const bootstrap = async () => {
   await fileStorage.connect()
 
   // Initialize default data
-  Account.initializeDefaultAccounts()
   Course.initializeDefaultCourses()
+  await Account.initializeDefaultAccounts()
   Patient.initializeDefaultPatients()
   InviteCode.initializeDefaultCodes()
+
+  // Print the current course invite codes so the admin knows what to hand out.
+  const courses = Course.findAll()
+  if (courses.length) {
+    console.log('🔑 Course join codes:')
+    for (const c of courses) {
+      console.log(`   ${c.name} (${c.code}): ${c.inviteCode}`)
+    }
+  }
 
   app.get('/', (req, res) => {
     res.status(200).send('Hello, world!')
@@ -31,6 +41,7 @@ const bootstrap = async () => {
   app.use('/auth', authRoutes)
   app.use('/courses', courseRoutes)
   app.use('/patients', patientRoutes)
+  app.use('/admin', adminRoutes)
   // add rest of routes here...
 
   // Find an available port

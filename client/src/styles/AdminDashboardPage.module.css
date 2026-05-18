@@ -1,0 +1,122 @@
+.pageWrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--cuw-gray-bg);
+}
+
+.heroBanner {
+  position: relative;
+  background: linear-gradient(135deg, #002759 0%, #003D82 60%, #1B5BB8 100%);
+  color: #FFFFFF;
+  padding: 32px 0 28px;
+  border-bottom: 6px solid #FFB81C;
+  overflow: hidden;
+}
+
+.heroBanner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('../../public/images/cuw-background.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.10;
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.heroBranding {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.heroLogo {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.heroLogo img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.heroEyebrow {
+  display: block;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #FFB81C;
+  margin-bottom: 4px;
+}
+
+.heroTitle {
+  font-family: 'Merriweather', Georgia, serif !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  margin: 0 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.heroAccountLine {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 8px;
+}
+
+.tabsBar {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.content {
+  padding: 24px 0 64px;
+  flex: 1;
+}
+
+.sectionCard {
+  background: #FFFFFF;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #E5E7EB;
+  border-top: 3px solid #003D82;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.codeBadge {
+  font-family: 'Source Code Pro', Menlo, Consolas, monospace;
+  background: #FFFBF0;
+  color: #003D82;
+  border: 1px solid #FFB81C;
+  border-radius: 2px;
+  padding: 2px 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: inline-block;
+}

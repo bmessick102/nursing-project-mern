@@ -2,7 +2,19 @@ import express, { type RequestHandler } from 'express'
 import checkBearerToken from '../middlewares/check-bearer-token'
 import errorHandler from '../middlewares/error-handler'
 import Patient from '../models/FileBasedPatient'
+import Course from '../models/FileBasedCourse'
 import fileDb from '../utils/fileDb'
+
+// True if the caller is an administrator (any data) OR the course
+// includes the caller's account id in its enrolled list.
+const isEnrolledOrAdmin = (req: any, courseId: string): boolean => {
+  const role = req.auth?.role
+  if (role === 'administrator' || role === 'admin') return true
+  const accountId = req.auth?.uid
+  if (!accountId) return false
+  const course = Course.findById(courseId)
+  return !!course && course.enrolledAccountIds.includes(accountId)
+}
 
 const router = express.Router()
 
@@ -19,10 +31,16 @@ const getAllPatients: RequestHandler = (req, res, next) => {
   }
 }
 
-// GET patients by course
+// GET patients by course — gated to enrolled students + administrators
 const getPatientsByCourse: RequestHandler = (req, res, next) => {
   try {
     const courseId = req.params.courseId as string
+    if (!isEnrolledOrAdmin(req, courseId)) {
+      return next({
+        statusCode: 403,
+        message: 'You are not enrolled in this course.',
+      })
+    }
     const patients = Patient.findByCourse(courseId)
     res.status(200).json({
       message: 'Successfully retrieved patients',

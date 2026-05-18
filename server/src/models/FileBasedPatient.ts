@@ -1,4 +1,5 @@
 import fileDb from '../utils/fileDb'
+import Course from './FileBasedCourse'
 
 export interface Modification {
   modifiedAt: string
@@ -185,9 +186,19 @@ export interface Patient {
 
 const COLLECTION = 'patients'
 
+// Cache the first-course id so we don't re-query for every patient read.
+let firstCourseIdCache: string | null = null
+const getFirstCourseId = (): string => {
+  if (firstCourseIdCache) return firstCourseIdCache
+  const all = Course.findAll()
+  firstCourseIdCache = all[0]?._id || ''
+  return firstCourseIdCache
+}
+
 const normalizePatient = (patient: any): Patient => {
   return {
     ...patient,
+    courseId: patient.courseId && patient.courseId !== '' ? patient.courseId : getFirstCourseId(),
     vitals: patient.vitals || [],
     labs: patient.labs || [],
     encounters: patient.encounters || [],

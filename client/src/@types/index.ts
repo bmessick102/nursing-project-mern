@@ -13,6 +13,8 @@ export interface Account {
   lastName?: string
   email?: string
   role: AccountRole
+  enrolledCourseIds?: string[]
+  active?: boolean
 }
 
 export interface FormData {
@@ -26,7 +28,6 @@ export interface RegisterData {
   firstName: string
   lastName: string
   email: string
-  inviteCode: string
 }
 
 export interface Modification {
@@ -61,6 +62,8 @@ export interface Course {
   code: string
   instructor: string
   description: string
+  inviteCode?: string
+  enrolledAccountIds?: string[]
 }
 
 export interface VitalSigns extends Auditable {
