@@ -41,7 +41,7 @@ export const useChartingApi = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [reportError])
 
   const fetchPatientsByCourse = useCallback(async (courseId: string) => {
     setLoading(true)
@@ -56,7 +56,7 @@ export const useChartingApi = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [reportError])
 
   const fetchPatient = useCallback(async (patientId: string) => {
     setLoading(true)
@@ -71,7 +71,7 @@ export const useChartingApi = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [reportError])
 
   const addVitals = useCallback(async (patientId: string, vitals: Omit<VitalSigns, '_id'>) => {
     setLoading(true)
@@ -86,7 +86,7 @@ export const useChartingApi = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [reportError])
 
   const addNote = useCallback(async (patientId: string, note: Omit<NursingNote, '_id'>) => {
     setLoading(true)
@@ -101,7 +101,7 @@ export const useChartingApi = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [reportError])
 
   const signMAR = useCallback(
     async (patientId: string, payload: { entryId: string; scheduledTime: string; givenBy: string }) => {
@@ -118,7 +118,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const addIO = useCallback(async (patientId: string, io: Omit<IOEntry, '_id'>) => {
@@ -134,7 +134,7 @@ export const useChartingApi = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [reportError])
 
   const addAssessment = useCallback(
     async (patientId: string, assessment: Omit<NursingAssessment, '_id'>) => {
@@ -151,7 +151,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const addBradenScore = useCallback(
@@ -169,7 +169,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const addEncounter = useCallback(
@@ -187,7 +187,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const addLab = useCallback(
@@ -205,7 +205,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const addMAREntry = useCallback(
@@ -228,7 +228,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const addOrder = useCallback(
@@ -246,7 +246,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const updatePatientFields = useCallback(
@@ -279,7 +279,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   // --- Generic audit / edit / addendum / mark-in-error ---
@@ -310,7 +310,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const addAddendumToResource = useCallback(
@@ -338,7 +338,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   const markResourceInError = useCallback(
@@ -365,7 +365,7 @@ export const useChartingApi = () => {
         setLoading(false)
       }
     },
-    [],
+    [reportError],
   )
 
   // --- Course enrollment (student) ---
