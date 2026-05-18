@@ -37,6 +37,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@rollup/plugin-babel": "^7.0.0",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
