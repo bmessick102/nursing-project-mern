@@ -7,7 +7,7 @@ const checkBearerToken: RequestHandler = (req, res, next) => {
 
     if (!token) {
       return next({
-        statusCode: 400,
+        statusCode: 401,
         message: 'Token not provided',
       })
     }

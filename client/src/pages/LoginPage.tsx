@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -13,17 +14,12 @@ import {
 } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuth } from 'contexts/AuthContext'
-import UtilityBar from 'components/UtilityBar'
 import PillarCards from 'components/PillarCards'
-import Footer from 'components/Footer'
 import styles from 'styles/LoginPage.module.css'
 
-interface LoginPageProps {
-  onSwitchToSignUp?: () => void
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
+const LoginPage: React.FC = () => {
   const { login, isLoggedIn } = useAuth()
+  const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -45,12 +41,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
   }
 
   if (isLoggedIn) {
+    navigate('/', { replace: true })
     return null
   }
 
   return (
     <Box className={styles.pageWrap}>
-      <UtilityBar />
       <Box className={styles.loginContainer}>
         <div className={styles.backgroundLeft}></div>
         <div className={styles.backgroundRight}></div>
@@ -128,27 +124,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
               </Button>
             </form>
 
-            {onSwitchToSignUp && (
-              <Typography
-                variant="body2"
-                sx={{ mt: 3, textAlign: 'center', color: '#4A4A4A' }}
+            <Typography
+              variant="body2"
+              sx={{ mt: 3, textAlign: 'center', color: '#4A4A4A' }}
+            >
+              Don&rsquo;t have an account?{' '}
+              <MuiLink
+                component="button"
+                type="button"
+                onClick={() => navigate('/signup')}
+                sx={{
+                  color: '#003D82',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
               >
-                Don&rsquo;t have an account?{' '}
-                <MuiLink
-                  component="button"
-                  type="button"
-                  onClick={onSwitchToSignUp}
-                  sx={{
-                    color: '#003D82',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    '&:hover': { textDecoration: 'underline' },
-                  }}
-                >
-                  Sign Up
-                </MuiLink>
-              </Typography>
-            )}
+                Sign Up
+              </MuiLink>
+            </Typography>
 
             <Typography variant="caption" className={styles.footer}>
               Last login: Never
@@ -158,7 +152,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToSignUp }) => {
           <PillarCards />
         </Container>
       </Box>
-      <Footer />
     </Box>
   )
 }

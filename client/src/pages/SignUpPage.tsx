@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -14,16 +15,11 @@ import {
 } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuth } from 'contexts/AuthContext'
-import UtilityBar from 'components/UtilityBar'
-import Footer from 'components/Footer'
 import styles from 'styles/LoginPage.module.css'
 
-interface SignUpPageProps {
-  onSwitchToLogin: () => void
-}
-
-const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
+const SignUpPage: React.FC = () => {
   const { register, isLoggedIn } = useAuth()
+  const navigate = useNavigate()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -36,6 +32,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false)
 
   if (isLoggedIn) {
+    navigate('/', { replace: true })
     return null
   }
 
@@ -91,7 +88,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
 
   return (
     <Box className={styles.pageWrap}>
-      <UtilityBar />
       <Box className={styles.loginContainer}>
         <div className={styles.backgroundLeft}></div>
         <div className={styles.backgroundRight}></div>
@@ -259,7 +255,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
               <MuiLink
                 component="button"
                 type="button"
-                onClick={onSwitchToLogin}
+                onClick={() => navigate('/login')}
                 sx={{
                   color: '#003D82',
                   fontWeight: 600,
@@ -277,7 +273,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSwitchToLogin }) => {
           </Box>
         </Container>
       </Box>
-      <Footer />
     </Box>
   )
 }

@@ -20,7 +20,7 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material'
-import type { Patient, VitalSigns } from '@types'
+import type { VitalSigns } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -38,10 +38,6 @@ import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
-interface FlowsheetsTabProps {
-  patient: Patient | null
-}
-
 const blankForm = () => ({
   temp: 98.6,
   tempSource: 'Oral',
@@ -54,7 +50,8 @@ const blankForm = () => ({
   position: 'Sitting',
 })
 
-const FlowsheetsTab: React.FC<FlowsheetsTabProps> = ({ patient }) => {
+const FlowsheetsTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const [tabValue, setTabValue] = useState(0)
@@ -135,7 +132,7 @@ const FlowsheetsTab: React.FC<FlowsheetsTabProps> = ({ patient }) => {
   }
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader
         title="Vital Signs & Flowsheets"
         actionLabel="Add Vitals"
@@ -412,7 +409,7 @@ const FlowsheetsTab: React.FC<FlowsheetsTabProps> = ({ patient }) => {
         entry={historyFor}
         entityLabel="vital signs entry"
       />
-    </>
+    </Box>
   )
 }
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import {
+  Box,
   Paper,
   Typography,
   Grid,
@@ -24,7 +25,7 @@ import {
   Stack,
   CircularProgress,
 } from '@mui/material'
-import type { Patient, LabResult } from '@types'
+import type { LabResult } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -36,9 +37,6 @@ import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
-interface ResultsTabProps {
-  patient: Patient | null
-}
 
 const CATEGORIES = [
   'CHEMISTRY',
@@ -62,7 +60,8 @@ const blankLab = () => ({
   flag: '' as '' | 'H' | 'L' | 'C',
 })
 
-const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
+const ResultsTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const { addLab, editResource, markResourceInError, loading } = useChartingApi()
@@ -174,7 +173,7 @@ const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
   const filtered = labs.filter((lab) => lab.category === active)
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader title="Results" actionLabel="Add Lab Result" onAction={handleOpen} />
 
       {labs.length === 0 ? (
@@ -415,7 +414,7 @@ const ResultsTab: React.FC<ResultsTabProps> = ({ patient }) => {
         entry={historyFor}
         entityLabel="lab result"
       />
-    </>
+    </Box>
   )
 }
 

@@ -12,3 +12,6 @@ dist
 .DS_Store
 *.log
 *.pid
+
+# runtime data store (SQLite db + legacy JSON). Never commit student/account data.
+server/data/

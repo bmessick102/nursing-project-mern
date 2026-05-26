@@ -1,41 +1,31 @@
-import crypt from './utils/crypt'
-import fileDb from './utils/fileDb'
+// Must be first: load .env before modules that read process.env at import time.
+import 'dotenv/config'
 
-const seedAccounts = async () => {
-  console.log('🌱 Seeding test accounts...')
+import fileStorage from './utils/fileStorage'
+import Account from './models/FileBasedAccount'
+import Course from './models/FileBasedCourse'
+import Patient from './models/FileBasedPatient'
+import InviteCode from './models/FileBasedInviteCode'
 
-  const testAccounts = [
-    { username: 'student1', password: 'password123', role: 'user' as const },
-    { username: 'nurse_test', password: 'test123', role: 'user' as const },
-    { username: 'instructor', password: 'instructor123', role: 'admin' as const },
-  ]
+/**
+ * One-off seed/init: open the SQLite store (importing any legacy JSON), then ensure
+ * the default courses, administrator, patients, and invite codes exist. Idempotent —
+ * the initializeDefault* helpers no-op when data already exists. The admin password
+ * comes from ADMIN_PASSWORD (no credential is hardcoded here).
+ */
+const seed = async () => {
+  await fileStorage.connect()
 
-  const accounts = []
+  Course.initializeDefaultCourses()
+  await Account.initializeDefaultAccounts()
+  Patient.initializeDefaultPatients()
+  InviteCode.initializeDefaultCodes()
 
-  for (const account of testAccounts) {
-    const hashedPassword = await crypt.hash(account.password)
-    accounts.push({
-      _id: fileDb.generateId(),
-      username: account.username,
-      password: hashedPassword,
-      role: account.role,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
-  }
-
-  fileDb.writeCollection('accounts', accounts)
-  console.log('✅ Test accounts created:')
-  testAccounts.forEach((acc) => {
-    console.log(`   - ${acc.username} / ${acc.password}`)
-  })
+  console.log('✅ Seed/init complete.')
 }
 
-seedAccounts()
-  .then(() => {
-    console.log('✅ Seeding complete!')
-    process.exit(0)
-  })
+seed()
+  .then(() => process.exit(0))
   .catch((err) => {
     console.error('❌ Seeding failed:', err)
     process.exit(1)

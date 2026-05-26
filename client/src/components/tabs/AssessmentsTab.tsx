@@ -41,10 +41,6 @@ import MusculoskeletalAssessment from 'components/assessments/MusculoskeletalAss
 import PsychosocialAssessment from 'components/assessments/PsychosocialAssessment'
 import styles from 'styles/TabContent.module.css'
 
-interface AssessmentsTabProps {
-  patient: Patient | null
-}
-
 const SYSTEM_LABEL: Record<AssessmentSystem, string> = {
   neuro: 'Neurological',
   cardiac: 'Cardiovascular',
@@ -57,7 +53,8 @@ const SYSTEM_LABEL: Record<AssessmentSystem, string> = {
   psychosocial: 'Psychosocial',
 }
 
-const AssessmentsTab: React.FC<AssessmentsTabProps> = ({ patient }) => {
+const AssessmentsTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const [view, setView] = useState(0)
@@ -137,7 +134,7 @@ const AssessmentsTab: React.FC<AssessmentsTabProps> = ({ patient }) => {
   ]
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader title="Nursing Assessments — Head-to-Toe" />
       <Paper className={styles.section}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -281,7 +278,7 @@ const AssessmentsTab: React.FC<AssessmentsTabProps> = ({ patient }) => {
         entityLabel="assessment"
       />
       </Paper>
-    </>
+    </Box>
   )
 }
 

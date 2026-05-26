@@ -30,6 +30,14 @@ const login: RequestHandler = async (req, res, next) => {
       })
     }
 
+    // Soft-deleted / disabled accounts cannot log in.
+    if (account.active === false) {
+      return next({
+        statusCode: 403,
+        message: 'This account has been disabled. Contact your administrator.',
+      })
+    }
+
     // Verify password hash
     const passOk = await crypt.validate(password, account.password)
 
@@ -37,14 +45,6 @@ const login: RequestHandler = async (req, res, next) => {
       return next({
         statusCode: 400,
         message: 'Bad credentials',
-      })
-    }
-
-    // Soft-deleted / disabled accounts cannot log in.
-    if (account.active === false) {
-      return next({
-        statusCode: 403,
-        message: 'This account has been disabled. Contact your administrator.',
       })
     }
 

@@ -18,7 +18,7 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material'
-import type { Patient, NursingNote } from '@types'
+import type { NursingNote } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -32,17 +32,14 @@ import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
-interface NotesTabProps {
-  patient: Patient | null
-}
-
 const blankForm = () => ({
   type: 'Progress Note',
   content: '',
   signed: false,
 })
 
-const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
+const NotesTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const [selectedNote, setSelectedNote] = useState<NursingNote | null>(null)
@@ -178,7 +175,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
   }
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader title="Nursing Notes" actionLabel="Add Note" onAction={startWrite} />
       <Grid container spacing={2} className={styles.tabContainer}>
         <Grid item xs={12} md={4}>
@@ -408,7 +405,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ patient }) => {
         entry={historyFor}
         entityLabel="note"
       />
-    </>
+    </Box>
   )
 }
 

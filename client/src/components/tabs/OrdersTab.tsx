@@ -26,7 +26,7 @@ import {
   IconButton,
 } from '@mui/material'
 import { Add, Delete, Edit as EditIcon } from '@mui/icons-material'
-import type { Patient, Order } from '@types'
+import type { Order } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -37,10 +37,6 @@ import InErrorBanner, { inErrorRowSx } from 'components/edit/InErrorBanner'
 import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
-
-interface OrdersTabProps {
-  patient: Patient | null
-}
 
 type OrderTypeKey = Order['type']
 
@@ -64,7 +60,8 @@ const blankDischarge = () => ({
 
 const capitalize = (s: string) => (s.length === 0 ? s : s[0].toUpperCase() + s.slice(1))
 
-const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
+const OrdersTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const { addOrder, editResource, markResourceInError, updatePatientFields, loading } =
@@ -259,7 +256,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
 
   if (tabValue === DISCHARGE_TAB_INDEX) {
     return (
-      <>
+      <Box data-phi="true">
         <TabHeader
           title="Orders"
           actionLabel={patient.dischargeSummary ? 'Edit Discharge Summary' : 'Add Discharge Summary'}
@@ -405,7 +402,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
             </Button>
           </DialogActions>
         </Dialog>
-      </>
+      </Box>
     )
   }
 
@@ -413,7 +410,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
   const filteredOrders = orders.filter((order) => order.type === type)
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader title="Orders" actionLabel="Add Order" onAction={startAdd} />
       <Paper className={styles.section}>
         {subtabsBar}
@@ -693,7 +690,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ patient }) => {
         entry={historyFor}
         entityLabel="order"
       />
-    </>
+    </Box>
   )
 }
 

@@ -1,16 +1,28 @@
-import dotenv from 'dotenv'
-dotenv.config()
+// Must be first: loads .env before any imported module reads process.env
+// (e.g. constants/index.ts, which throws if JWT_SECRET is missing).
+import 'dotenv/config'
 
+import path from 'path'
+import express from 'express'
 import app from './utils/app' // (server)
+import logger from './utils/logger'
 import fileStorage from './utils/fileStorage' // (database)
-import authRoutes from './routes/auth'
-import courseRoutes from './routes/courses'
-import patientRoutes from './routes/patients'
-import adminRoutes from './routes/admin'
+import { registerRoutes } from './routes'
 import Account from './models/FileBasedAccount'
 import Course from './models/FileBasedCourse'
 import Patient from './models/FileBasedPatient'
 import InviteCode from './models/FileBasedInviteCode'
+
+// Log fatal errors before the process exits so the platform (Railway) can record
+// them and restart cleanly, instead of dying silently.
+process.on('uncaughtException', (error) => {
+  logger.fatal({ err: error }, 'Uncaught exception — shutting down')
+  process.exit(1)
+})
+process.on('unhandledRejection', (reason) => {
+  logger.fatal({ err: reason }, 'Unhandled promise rejection — shutting down')
+  process.exit(1)
+})
 
 const bootstrap = async () => {
   await fileStorage.connect()
@@ -34,39 +46,35 @@ const bootstrap = async () => {
     res.status(200).send('Hello, world!')
   })
 
-  app.get('/healthz', (req, res) => {
-    res.status(204).end()
+  // Health check + all API routers.
+  registerRoutes(app)
+
+  // Serve the React build so the entire app runs from one port.
+  // API routes above take priority; everything else falls through to the SPA.
+  const clientBuild = path.join(__dirname, '../../client/build')
+  app.use(express.static(clientBuild))
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientBuild, 'index.html'))
   })
 
-  app.use('/auth', authRoutes)
-  app.use('/courses', courseRoutes)
-  app.use('/patients', patientRoutes)
-  app.use('/admin', adminRoutes)
-  // add rest of routes here...
+  const port = parseInt(process.env.PORT || '5001', 10)
 
-  // Find an available port
-  const preferredPort = parseInt(process.env.PORT || '5000', 10)
-
-  const server = app.listen(preferredPort, () => {
-    console.log(`✅ Server is listening on port: ${preferredPort}`)
-    console.log(`📱 Frontend should connect to: http://localhost:${preferredPort}`)
+  const server = app.listen(port, () => {
+    console.log(`✅ Server is listening on port: ${port}`)
+    console.log(`📱 Frontend should connect to: http://localhost:${port}`)
   })
 
-  // Handle port in use - try next port
+  // Fail loudly if the port is taken. Silently drifting to another port would
+  // leave the frontend dev proxy (which targets this exact port) unable to connect.
   server.on('error', (error: any) => {
     if (error.code === 'EADDRINUSE') {
-      console.log(`⚠️  Port ${preferredPort} is in use, trying ${preferredPort + 1}...`)
-      const newPort = preferredPort + 1
-      const retryServer = app.listen(newPort, () => {
-        console.log(`✅ Server is listening on port: ${newPort}`)
-        console.log(`📱 Update client .env to: http://localhost:${newPort}`)
-      })
-
-      retryServer.on('error', () => {
-        console.error('❌ Could not find an available port. Please close other applications.')
-        process.exit(1)
-      })
+      console.error(
+        `❌ Port ${port} is already in use. Stop whatever is using it (or set a different PORT) and restart.`,
+      )
+    } else {
+      console.error('❌ Server failed to start:', error)
     }
+    process.exit(1)
   })
 }
 

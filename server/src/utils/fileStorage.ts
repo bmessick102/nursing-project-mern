@@ -9,12 +9,12 @@ class FileStorage {
 
   async connect() {
     try {
-      console.log('⏳ Initializing file-based storage')
-      fileDb.ensureDataDir()
+      console.log('⏳ Initializing SQLite storage')
+      fileDb.init()
       this.isConnected = true
-      console.log('✅ File storage initialized')
+      console.log('✅ SQLite storage initialized')
     } catch (error: any) {
-      console.log('❌ File storage error:', error.message)
+      console.log('❌ Storage error:', error.message)
     }
   }
 }

@@ -16,6 +16,14 @@ const loginWithToken: RequestHandler = async (req, res, next) => {
       })
     }
 
+    // Soft-deleted / disabled accounts cannot refresh tokens
+    if (account.active === false) {
+      return next({
+        statusCode: 403,
+        message: 'This account has been disabled. Contact your administrator.',
+      })
+    }
+
     // Generate access token
     const token = jwt.signToken({ uid: account._id, role: account.role })
 

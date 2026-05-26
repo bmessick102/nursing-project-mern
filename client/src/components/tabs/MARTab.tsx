@@ -22,7 +22,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material'
-import type { MAREntry, Patient } from '@types'
+import type { MAREntry } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -34,9 +34,6 @@ import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
-interface MARTabProps {
-  patient: Patient | null
-}
 
 interface SignoffState {
   entryId: string | null
@@ -87,7 +84,8 @@ const blankForm = () => ({
   scheduledTimes: ['0800', '2000'] as string[],
 })
 
-const MARTab: React.FC<MARTabProps> = ({ patient }) => {
+const MARTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const [signoffDialog, setSignoffDialog] = useState<SignoffState>({
@@ -223,7 +221,7 @@ const MARTab: React.FC<MARTabProps> = ({ patient }) => {
   }
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader
         title="Medication Administration Record"
         actionLabel="Add Medication"
@@ -481,7 +479,7 @@ const MARTab: React.FC<MARTabProps> = ({ patient }) => {
         entry={historyFor}
         entityLabel="medication order"
       />
-    </>
+    </Box>
   )
 }
 

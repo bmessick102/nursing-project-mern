@@ -1,5 +1,9 @@
 .patientContainer {
-  min-height: 100vh;
+  /* Full-bleed within AppShell content region: cancel the 24px contentArea padding */
+  margin: -24px -24px 0;
+  width: calc(100% + 48px);
+  box-sizing: border-box;
+  min-height: calc(100% + 24px);
   background: #F8F9FA;
   display: flex;
   flex-direction: column;

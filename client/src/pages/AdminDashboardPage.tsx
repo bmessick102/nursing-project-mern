@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -30,8 +31,6 @@ import type { Course, Patient } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
 import { useSnackbar } from 'contexts/SnackbarContext'
-import UtilityBar from 'components/UtilityBar'
-import Footer from 'components/Footer'
 import EmptyState from 'components/common/EmptyState'
 import CreateCourseDialog from 'components/admin/CreateCourseDialog'
 import CreatePatientDialog from 'components/admin/CreatePatientDialog'
@@ -39,6 +38,7 @@ import RegenerateCodeDialog from 'components/admin/RegenerateCodeDialog'
 import CreateAccountDialog from 'components/admin/CreateAccountDialog'
 import EditAccountDialog from 'components/admin/EditAccountDialog'
 import { useAuth } from 'contexts/AuthContext'
+import { useAppStore } from 'store/useAppStore'
 import styles from 'styles/AdminDashboardPage.module.css'
 
 interface AdminAccount {
@@ -53,11 +53,8 @@ interface AdminAccount {
   active?: boolean
 }
 
-interface AdminDashboardPageProps {
-  onLogout: () => void
-}
-
-const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => {
+const AdminDashboardPage: React.FC = () => {
+  const navigate = useNavigate()
   const {
     fetchCourses,
     fetchPatientsByCourse,
@@ -70,8 +67,16 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => 
     loading,
   } = useChartingApi()
   const { displayName, username } = useCurrentUser()
-  const { account: callerAccount } = useAuth()
+  const { account: callerAccount, logout } = useAuth()
+  const { setSelectedCourse, setSelectedPatient } = useAppStore()
   const { notifySuccess } = useSnackbar()
+
+  const handleLogout = () => {
+    logout()
+    setSelectedCourse(null)
+    setSelectedPatient(null)
+    navigate('/login', { replace: true })
+  }
 
   const [tab, setTab] = useState(0)
   const [courses, setCourses] = useState<Course[]>([])
@@ -212,7 +217,6 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => 
 
   return (
     <Box className={styles.pageWrap}>
-      <UtilityBar showLogout onLogout={onLogout} />
 
       <Box className={styles.heroBanner}>
         <Container maxWidth="xl" className={styles.heroInner}>
@@ -231,7 +235,7 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => 
             </Box>
           </Box>
           <Box className={styles.heroActions}>
-            <Button variant="outlined" sx={{ color: '#fff', borderColor: '#fff' }} onClick={onLogout}>
+            <Button variant="outlined" sx={{ color: '#fff', borderColor: '#fff' }} onClick={handleLogout}>
               Sign Out
             </Button>
           </Box>
@@ -582,8 +586,6 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => 
           {copySnack}
         </Alert>
       </Snackbar>
-
-      <Footer />
     </Box>
   )
 }

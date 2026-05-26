@@ -1,12 +1,21 @@
 import { type RequestHandler } from 'express'
+import joi from '../../utils/joi'
 import Course from '../../models/FileBasedCourse'
 
-const createCourse: RequestHandler = (req, res, next) => {
+const createCourse: RequestHandler = async (req, res, next) => {
   try {
-    const { name, code, instructor, description } = req.body || {}
-    if (!name || !code) {
-      return next({ statusCode: 400, message: 'name and code are required' })
-    }
+    const validationError = await joi.validate(
+      {
+        name: joi.instance.string().min(1).max(120).required(),
+        code: joi.instance.string().min(1).max(40).required(),
+        instructor: joi.instance.string().max(120).allow('').optional(),
+        description: joi.instance.string().max(2000).allow('').optional(),
+      },
+      req.body,
+    )
+    if (validationError) return next(validationError)
+
+    const { name, code, instructor, description } = req.body
     const created = Course.create({
       name: String(name).trim(),
       code: String(code).trim(),

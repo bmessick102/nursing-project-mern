@@ -21,7 +21,7 @@ import {
   RadioGroup,
   CircularProgress,
 } from '@mui/material'
-import type { Patient, IOEntry } from '@types'
+import type { IOEntry } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -34,10 +34,6 @@ import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
-interface IOTabProps {
-  patient: Patient | null
-}
-
 const blankForm = () => ({
   type: 'intake' as 'intake' | 'output',
   category: 'Oral',
@@ -45,7 +41,8 @@ const blankForm = () => ({
   unit: 'mL',
 })
 
-const IOTab: React.FC<IOTabProps> = ({ patient }) => {
+const IOTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const [tabValue, setTabValue] = useState(0)
@@ -139,7 +136,7 @@ const IOTab: React.FC<IOTabProps> = ({ patient }) => {
   const balance = totalIntake - totalOutput
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader
         title="Intake & Output"
         actionLabel="Log I/O"
@@ -387,7 +384,7 @@ const IOTab: React.FC<IOTabProps> = ({ patient }) => {
         entityLabel="I/O entry"
       />
       </Paper>
-    </>
+    </Box>
   )
 }
 

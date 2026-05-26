@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -18,19 +19,10 @@ import { Search, Warning as WarningIcon } from '@mui/icons-material'
 import type { Patient } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useAppStore } from 'store/useAppStore'
-import UtilityBar from 'components/UtilityBar'
-import Footer from 'components/Footer'
 import styles from 'styles/PatientListPage.module.css'
 
-interface PatientListPageProps {
-  onPatientSelected: () => void
-  onBack: () => void
-}
-
-const PatientListPage: React.FC<PatientListPageProps> = ({
-  onPatientSelected,
-  onBack,
-}) => {
+const PatientListPage: React.FC = () => {
+  const navigate = useNavigate()
   const { fetchPatientsByCourse, loading, error } = useChartingApi()
   const [patients, setPatients] = useState<Patient[]>([])
   const [query, setQuery] = useState('')
@@ -54,7 +46,7 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
 
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient)
-    onPatientSelected()
+    navigate(`/patient/${patient._id}/summary`)
   }
 
   const normalizedQuery = query.trim().toLowerCase()
@@ -76,7 +68,6 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
 
   return (
     <Box className={styles.patientContainer}>
-      <UtilityBar />
       <Box className={styles.heroBanner}>
         <Box className={styles.heroImage} />
         <Box className={styles.heroOverlay} />
@@ -102,7 +93,7 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
             </Box>
             <Button
               variant="contained"
-              onClick={onBack}
+              onClick={() => navigate('/course-select')}
               className={styles.backButton}
             >
               Back to Courses
@@ -165,7 +156,7 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
                     onClick={() => handlePatientSelect(patient)}
                     className={styles.listButton}
                   >
-                    <Box className={styles.patientInfo}>
+                    <Box className={styles.patientInfo} data-phi="true">
                       <Typography variant="h6" className={styles.patientName}>
                         {patient.name}
                       </Typography>
@@ -217,7 +208,6 @@ const PatientListPage: React.FC<PatientListPageProps> = ({
           </Grid>
         )}
       </Container>
-      <Footer />
     </Box>
   )
 }

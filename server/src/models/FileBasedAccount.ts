@@ -82,36 +82,41 @@ const addEnrolledCourse = (id: string, courseId: string): AccountWithId | undefi
 }
 
 const SEEDED_ADMIN = {
-  username: 'cuw-admin',
-  // 15 chars, mixed case + digit + symbol — meets 12-char minimum + NIST 800-63B guidance.
-  password: 'Concordia2026!Admin',
+  username: process.env.ADMIN_USERNAME || 'cuw-admin',
   firstName: 'System',
   lastName: 'Administrator',
   email: 'admin@cuw.edu',
 }
 
 const initializeDefaultAccounts = async () => {
-  // Always ensure the documented `cuw-admin` account exists with the documented
-  // password. Pre-existing legacy admins (e.g. anyone who self-signed-up with the
-  // old admin invite code) are left in place — we just guarantee that the
-  // credentials in the README/docs will work for someone who never used the app.
+  // Ensure an initial administrator exists. The password comes from ADMIN_PASSWORD
+  // (no credential is hardcoded in source). If it isn't set, we skip seeding rather
+  // than fall back to a well-known password — that fallback was the vulnerability.
   const existing = findOne({ username: SEEDED_ADMIN.username })
-  if (!existing) {
-    const hash = await crypt.hash(SEEDED_ADMIN.password)
-    create({
-      username: SEEDED_ADMIN.username,
-      password: hash,
-      role: 'administrator',
-      firstName: SEEDED_ADMIN.firstName,
-      lastName: SEEDED_ADMIN.lastName,
-      email: SEEDED_ADMIN.email,
-      enrolledCourseIds: [],
-      active: true,
-    })
-    console.log('✅ Seeded administrator account:')
-    console.log(`   Username: ${SEEDED_ADMIN.username}`)
-    console.log(`   Password: ${SEEDED_ADMIN.password}  (change this in production!)`)
+  if (existing) return
+
+  const password = process.env.ADMIN_PASSWORD
+  if (!password) {
+    console.warn(
+      '⚠️  ADMIN_PASSWORD not set — skipping initial admin seeding. ' +
+        'Set ADMIN_USERNAME and ADMIN_PASSWORD in the environment, then restart.',
+    )
+    return
   }
+
+  const hash = await crypt.hash(password)
+  create({
+    username: SEEDED_ADMIN.username,
+    password: hash,
+    role: 'administrator',
+    firstName: SEEDED_ADMIN.firstName,
+    lastName: SEEDED_ADMIN.lastName,
+    email: SEEDED_ADMIN.email,
+    enrolledCourseIds: [],
+    active: true,
+  })
+  console.log('✅ Seeded administrator account:')
+  console.log(`   Username: ${SEEDED_ADMIN.username}`)
 }
 
 export default {

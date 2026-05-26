@@ -1,9 +1,25 @@
 import { type RequestHandler } from 'express'
+import joi from '../../utils/joi'
 import Patient from '../../models/FileBasedPatient'
 import Course from '../../models/FileBasedCourse'
 
-const createPatient: RequestHandler = (req, res, next) => {
+const createPatient: RequestHandler = async (req, res, next) => {
   try {
+    const validationError = await joi.validate(
+      {
+        courseId: joi.instance.string().required(),
+        name: joi.instance.string().min(1).max(120).required(),
+        age: joi.instance.number().integer().min(0).max(130).optional(),
+        gender: joi.instance.string().max(40).allow('').optional(),
+        roomNumber: joi.instance.string().max(40).allow('').optional(),
+        diagnosis: joi.instance.array().items(joi.instance.string().max(200)).optional(),
+        allergies: joi.instance.array().items(joi.instance.string().max(200)).optional(),
+        medications: joi.instance.array().items(joi.instance.object()).optional(),
+      },
+      req.body,
+    )
+    if (validationError) return next(validationError)
+
     const {
       courseId,
       name,
@@ -15,9 +31,6 @@ const createPatient: RequestHandler = (req, res, next) => {
       medications,
     } = req.body || {}
 
-    if (!name || !courseId) {
-      return next({ statusCode: 400, message: 'name and courseId are required' })
-    }
     if (!Course.findById(courseId)) {
       return next({ statusCode: 400, message: 'courseId does not match any existing course' })
     }

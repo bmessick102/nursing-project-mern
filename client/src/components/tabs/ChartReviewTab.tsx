@@ -17,7 +17,7 @@ import {
   Stack,
   CircularProgress,
 } from '@mui/material'
-import type { Patient, Encounter } from '@types'
+import type { Encounter } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -29,9 +29,6 @@ import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
-interface ChartReviewTabProps {
-  patient: Patient | null
-}
 
 const ENCOUNTER_TYPES = [
   'Admission',
@@ -70,7 +67,8 @@ const blankEncounter = () => ({
   plan: '',
 })
 
-const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
+const ChartReviewTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
   const { addEncounter, editResource, markResourceInError, loading } = useChartingApi()
@@ -196,7 +194,7 @@ const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
     (selectedEncounter && encounters.find((e) => e._id === selectedEncounter._id)) || encounters[0]
 
   return (
-    <>
+    <Box data-phi="true">
       <TabHeader
         title="Chart Review / Encounters"
         actionLabel="Add Encounter"
@@ -505,7 +503,7 @@ const ChartReviewTab: React.FC<ChartReviewTabProps> = ({ patient }) => {
         entry={historyFor}
         entityLabel="encounter"
       />
-    </>
+    </Box>
   )
 }
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -22,17 +23,10 @@ import { useChartingApi } from 'hooks/useChartingApi'
 import { useAppStore } from 'store/useAppStore'
 import { useAuth } from 'contexts/AuthContext'
 import { useSnackbar } from 'contexts/SnackbarContext'
-import UtilityBar from 'components/UtilityBar'
-import Footer from 'components/Footer'
 import styles from 'styles/CourseSelectionPage.module.css'
 
-interface CourseSelectionPageProps {
-  onCourseSelected: () => void
-}
-
-const CourseSelectionPage: React.FC<CourseSelectionPageProps> = ({
-  onCourseSelected,
-}) => {
+const CourseSelectionPage: React.FC = () => {
+  const navigate = useNavigate()
   const { fetchMyCourses, joinCourse, loading, error } = useChartingApi()
   const [courses, setCourses] = useState<Course[]>([])
   const [tempSelectedCourse, setTempSelectedCourse] = useState<Course | null>(null)
@@ -58,7 +52,7 @@ const CourseSelectionPage: React.FC<CourseSelectionPageProps> = ({
   const handleContinue = () => {
     if (tempSelectedCourse) {
       setSelectedCourse(tempSelectedCourse)
-      onCourseSelected()
+      navigate('/patients')
     }
   }
 
@@ -83,7 +77,6 @@ const CourseSelectionPage: React.FC<CourseSelectionPageProps> = ({
 
   return (
     <Box className={styles.pageWrap}>
-      <UtilityBar showLogout onLogout={logout} />
       <Box className={styles.courseContainer}>
         <div className={styles.backgroundLeft}></div>
         <div className={styles.backgroundRight}></div>
@@ -219,7 +212,6 @@ const CourseSelectionPage: React.FC<CourseSelectionPageProps> = ({
           </Paper>
         </Container>
       </Box>
-      <Footer />
     </Box>
   )
 }

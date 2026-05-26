@@ -28,10 +28,6 @@ import { useChartingApi } from 'hooks/useChartingApi'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
-interface SummaryTabProps {
-  patient: Patient | null
-}
-
 type ManageMode = 'allergies' | 'diagnosis' | 'medications' | null
 
 interface MedicationDraft {
@@ -40,7 +36,8 @@ interface MedicationDraft {
   frequency: string
 }
 
-const SummaryTab: React.FC<SummaryTabProps> = ({ patient }) => {
+const SummaryTab: React.FC = () => {
+  const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { updatePatientFields, loading } = useChartingApi()
   const [mode, setMode] = useState<ManageMode>(null)
@@ -115,7 +112,7 @@ const SummaryTab: React.FC<SummaryTabProps> = ({ patient }) => {
   }
 
   return (
-    <Box>
+    <Box data-phi="true">
       <Box className={styles.statsBand}>
         <Box className={styles.statsHeader}>
           <span className={styles.statsEyebrow}>By the Numbers</span>
