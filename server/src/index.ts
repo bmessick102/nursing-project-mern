@@ -2,11 +2,13 @@
 // (e.g. constants/index.ts, which throws if JWT_SECRET is missing).
 import 'dotenv/config'
 
+import fs from 'fs'
 import path from 'path'
 import express from 'express'
 import app from './utils/app' // (server)
 import logger from './utils/logger'
 import fileStorage from './utils/fileStorage' // (database)
+import fileDb from './utils/fileDb'
 import { registerRoutes } from './routes'
 import Account from './models/FileBasedAccount'
 import Course from './models/FileBasedCourse'
@@ -25,6 +27,13 @@ process.on('unhandledRejection', (reason) => {
 })
 
 const bootstrap = async () => {
+  // Capture whether the DB file already existed BEFORE we open/seed it. This is the
+  // decisive persistence signal: if the file is fresh on every boot, the DB path is
+  // NOT on a mounted volume and all data (except re-seeded defaults like the admin)
+  // is wiped on each redeploy.
+  const dbPath = fileDb.getDbPath()
+  const dbExistedBeforeBoot = fs.existsSync(dbPath)
+
   await fileStorage.connect()
 
   // Initialize default data
@@ -32,6 +41,27 @@ const bootstrap = async () => {
   await Account.initializeDefaultAccounts()
   Patient.initializeDefaultPatients()
   InviteCode.initializeDefaultCodes()
+
+  // --- Persistence diagnostics (visible in Railway logs) ---------------------
+  // Make data-loss-on-redeploy impossible to miss. If the DB file was created fresh
+  // this boot, the storage is ephemeral and will be wiped again next redeploy.
+  const persistenceConfigured = Boolean(process.env.DATABASE_PATH || process.env.DATA_DIR)
+  console.log(`💾 SQLite DB path: ${dbPath}`)
+  if (dbExistedBeforeBoot) {
+    console.log('💾 DB file existed before this boot → data PERSISTED across restart ✅')
+  } else {
+    console.warn(
+      '💾 DB file was created fresh this boot → NO prior data found. ' +
+        'If this happens on every redeploy, the DB path is NOT on a persistent volume.',
+    )
+  }
+  if (process.env.NODE_ENV === 'production' && !persistenceConfigured) {
+    console.error(
+      '⚠️  PRODUCTION: neither DATABASE_PATH nor DATA_DIR is set. The SQLite file is on ' +
+        'ephemeral container storage and WILL be wiped on every redeploy. ' +
+        'Mount a Railway volume (e.g. at /data) and set DATABASE_PATH=/data/app.db.',
+    )
+  }
 
   // Print the current course invite codes so the admin knows what to hand out.
   const courses = Course.findAll()
