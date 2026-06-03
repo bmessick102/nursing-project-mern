@@ -130,7 +130,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
   /* Uniform card size regardless of how many diagnoses/allergies a patient has.
      Overflowing clinical info scrolls inside the card (see .scrollArea). */
-  height: 320px;
+  height: 280px;
   display: flex;
   flex-direction: column;
 }
