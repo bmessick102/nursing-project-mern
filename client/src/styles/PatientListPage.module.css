@@ -128,6 +128,11 @@
   border-left: 4px solid #B1B3B3 !important;
   background: #FFFFFF !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  /* Uniform card size regardless of how many diagnoses/allergies a patient has.
+     Overflowing clinical info scrolls inside the card (see .scrollArea). */
+  height: 320px;
+  display: flex;
+  flex-direction: column;
 }
 
 .patientCard:hover {
@@ -144,11 +149,24 @@
 .listButton {
   text-align: left;
   width: 100%;
+  height: 100%;
   padding: 20px !important;
+  align-items: stretch !important;
 }
 
 .patientInfo {
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollable region for diagnoses + allergies so the card stays a fixed height
+   while every chip remains accessible (nothing clinically important is hidden). */
+.scrollArea {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .patientName {

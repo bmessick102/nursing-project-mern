@@ -164,42 +164,44 @@ const PatientListPage: React.FC = () => {
                         Room {patient.roomNumber} • {patient.age} y/o {patient.gender}
                       </Typography>
 
-                      <Box className={styles.diagnoses}>
-                        {patient.diagnosis.map((diag, idx) => (
-                          <Chip
-                            key={idx}
-                            label={diag}
-                            size="small"
-                            variant="outlined"
-                            sx={{ mr: 1, mt: 1 }}
-                          />
-                        ))}
-                      </Box>
-
-                      {patient.allergies.length > 0 && (
-                        <Box className={styles.allergies}>
-                          <Typography variant="caption" className={styles.allergiesLabel}>
-                            Allergies:
-                          </Typography>
-                          {patient.allergies.map((allergy, idx) => (
+                      <Box className={styles.scrollArea}>
+                        <Box className={styles.diagnoses}>
+                          {patient.diagnosis.map((diag, idx) => (
                             <Chip
                               key={idx}
-                              icon={<WarningIcon fontSize="small" />}
-                              label={allergy}
+                              label={diag}
                               size="small"
-                              aria-label={`Allergy: ${allergy}`}
-                              sx={{
-                                mr: 1,
-                                color: '#B71C1C',
-                                borderColor: '#B71C1C',
-                                fontWeight: 600,
-                                '& .MuiChip-icon': { color: '#B71C1C' },
-                              }}
                               variant="outlined"
+                              sx={{ mr: 1, mt: 1 }}
                             />
                           ))}
                         </Box>
-                      )}
+
+                        {patient.allergies.length > 0 && (
+                          <Box className={styles.allergies}>
+                            <Typography variant="caption" className={styles.allergiesLabel}>
+                              Allergies:
+                            </Typography>
+                            {patient.allergies.map((allergy, idx) => (
+                              <Chip
+                                key={idx}
+                                icon={<WarningIcon fontSize="small" />}
+                                label={allergy}
+                                size="small"
+                                aria-label={`Allergy: ${allergy}`}
+                                sx={{
+                                  mr: 1,
+                                  color: '#B71C1C',
+                                  borderColor: '#B71C1C',
+                                  fontWeight: 600,
+                                  '& .MuiChip-icon': { color: '#B71C1C' },
+                                }}
+                                variant="outlined"
+                              />
+                            ))}
+                          </Box>
+                        )}
+                      </Box>
                     </Box>
                   </ListItemButton>
                 </Paper>
