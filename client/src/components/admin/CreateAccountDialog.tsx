@@ -12,7 +12,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  InputAdornment,
+  IconButton,
 } from '@mui/material'
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 
 type Role = 'student' | 'instructor' | 'administrator'
 
@@ -38,6 +42,9 @@ const CreateAccountDialog: React.FC<CreateAccountDialogProps> = ({
 }) => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -47,6 +54,9 @@ const CreateAccountDialog: React.FC<CreateAccountDialogProps> = ({
     if (open) {
       setUsername('')
       setPassword('')
+      setConfirmPassword('')
+      setShowPassword(false)
+      setShowConfirmPassword(false)
       setFirstName('')
       setLastName('')
       setEmail('')
@@ -55,11 +65,15 @@ const CreateAccountDialog: React.FC<CreateAccountDialogProps> = ({
   }, [open])
 
   const emailIsValid = email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const passwordsMatch = password === confirmPassword
+  // Only surface the mismatch error once the user has started confirming.
+  const showMismatchError = confirmPassword.length > 0 && !passwordsMatch
   const canSubmit =
     !!username.trim() &&
     username.trim().length >= 3 &&
     !!password &&
     password.length >= 12 &&
+    passwordsMatch &&
     emailIsValid &&
     !loading
 
@@ -136,16 +150,63 @@ const CreateAccountDialog: React.FC<CreateAccountDialogProps> = ({
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <TextField
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               fullWidth
               size="small"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               helperText="12+ characters required"
               required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowPassword((show) => !show)}
+                      edge="end"
+                      size="small"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Confirm Password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              fullWidth
+              size="small"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              error={showMismatchError}
+              helperText={showMismatchError ? 'Passwords do not match' : 'Re-enter password'}
+              required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowConfirmPassword((show) => !show)}
+                      edge="end"
+                      size="small"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? (
+                        <VisibilityOff fontSize="small" />
+                      ) : (
+                        <Visibility fontSize="small" />
+                      )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
           </Grid>
         </Grid>
