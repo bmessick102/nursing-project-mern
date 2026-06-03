@@ -130,12 +130,12 @@ const AdminDashboardPage: React.FC = () => {
   }, [loadCourses])
 
   useEffect(() => {
-    if (tab === 1 && filterCourseId) loadPatients(filterCourseId)
-  }, [tab, filterCourseId, loadPatients])
+    if (filterCourseId) loadPatients(filterCourseId)
+  }, [filterCourseId, loadPatients])
 
   useEffect(() => {
-    if (tab === 2) loadAccounts()
-  }, [tab, loadAccounts])
+    loadAccounts()
+  }, [loadAccounts])
 
   const handleCreateCourse = async (payload: {
     name: string

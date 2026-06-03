@@ -61,9 +61,6 @@ const LoginPage: React.FC = () => {
               />
             </Box>
             <Typography variant="h1" className={styles.title}>
-              Epic
-            </Typography>
-            <Typography variant="subtitle1" className={styles.subtitle}>
               Nursing Charting System
             </Typography>
             <Typography variant="caption" className={styles.featuring}>
