@@ -90,7 +90,7 @@ const ResultsTab: React.FC = () => {
   const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
-  const { addLab, editResource, markResourceInError, loading } = useChartingApi()
+  const { addLab, addLabsBatch, editResource, markResourceInError, loading } = useChartingApi()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState(blankLab())
@@ -253,8 +253,7 @@ const ResultsTab: React.FC = () => {
     setPanelLoading(true)
     const nowIso = new Date().toISOString()
     try {
-      let updated = patient
-      for (const entry of panelMembers(panel)) {
+      const payloads = panelMembers(panel).map((entry) => {
         let value = ''
         let flag: '' | 'H' | 'L' | 'C' = ''
         if (isNumericLab(entry)) {
@@ -264,7 +263,7 @@ const ResultsTab: React.FC = () => {
         } else if (entry.kind === 'qualitative') {
           value = entry.defaultResult || (entry.options && entry.options[0]) || ''
         }
-        const payload = {
+        return {
           category: entry.category,
           name: entry.name,
           value,
@@ -272,9 +271,10 @@ const ResultsTab: React.FC = () => {
           referenceRange: entry.referenceRange,
           date: nowIso,
           flag: flag === '' ? undefined : flag,
-        }
-        updated = await addLab(patient._id, payload as Omit<LabResult, '_id'>)
-      }
+        } as Omit<LabResult, '_id'>
+      })
+      if (payloads.length === 0) return
+      const updated = await addLabsBatch(patient._id, payloads)
       setSelectedPatient(updated)
       setSelectedCategory(panel.category)
       setPanelChoice('')

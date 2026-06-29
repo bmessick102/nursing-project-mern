@@ -29,6 +29,12 @@ import {
 import { Add, Delete, Edit as EditIcon } from '@mui/icons-material'
 import type { Order } from '@types'
 import { LAB_CATALOG, PANELS } from 'data/labReference'
+import {
+  MEDICATIONS,
+  DIET_ORDERS,
+  NURSING_ORDERS,
+  THERAPY_ORDERS,
+} from 'data/clinicalReference'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -62,15 +68,14 @@ const blankDischarge = () => ({
 
 const capitalize = (s: string) => (s.length === 0 ? s : s[0].toUpperCase() + s.slice(1))
 
-interface LabOrderOption {
+interface OrderNameOption {
   name: string
   group: string
   detail: string
 }
 
-// Panels listed first, then individual tests grouped by category. Used to autofill the
-// Order Name + Details on the Labs sub-tab.
-const LAB_ORDER_OPTIONS: LabOrderOption[] = [
+// Panels listed first, then individual tests grouped by category.
+const LAB_ORDER_OPTIONS: OrderNameOption[] = [
   ...PANELS.map((p) => ({
     name: p.name,
     group: 'Panels',
@@ -83,16 +88,61 @@ const LAB_ORDER_OPTIONS: LabOrderOption[] = [
   })),
 ]
 
-// Order Name input: a searchable lab/panel picker on the Labs sub-tab, a plain text field
-// elsewhere. Selecting a lab/panel autofills Details when empty.
+// Medications grouped by drug class (sorted so grouped headers stay contiguous); Details
+// autofills with a typical dose/route/frequency the nurse can refine.
+const MED_ORDER_OPTIONS: OrderNameOption[] = [...MEDICATIONS]
+  .sort((a, b) => a.drugClass.localeCompare(b.drugClass) || a.name.localeCompare(b.name))
+  .map((m) => ({
+    name: m.name,
+    group: m.drugClass,
+    detail: `${m.defaultDose} ${m.defaultRoute} — ${m.defaultFrequency}`,
+  }))
+
+const DIET_ORDER_OPTIONS: OrderNameOption[] = DIET_ORDERS.map((d) => ({
+  name: d.name,
+  group: 'Diet',
+  detail: d.detail,
+}))
+
+const NURSING_ORDER_OPTIONS: OrderNameOption[] = NURSING_ORDERS.map((d) => ({
+  name: d.name,
+  group: 'Nursing',
+  detail: d.detail,
+}))
+
+const THERAPY_ORDER_OPTIONS: OrderNameOption[] = THERAPY_ORDERS.map((d) => ({
+  name: d.name,
+  group: 'Therapy / Consults',
+  detail: d.detail,
+}))
+
+const ORDER_OPTIONS_BY_TYPE: Record<OrderTypeKey, OrderNameOption[]> = {
+  lab: LAB_ORDER_OPTIONS,
+  medication: MED_ORDER_OPTIONS,
+  diet: DIET_ORDER_OPTIONS,
+  nursing: NURSING_ORDER_OPTIONS,
+  therapy: THERAPY_ORDER_OPTIONS,
+}
+
+const ORDER_SEARCH_PLACEHOLDER: Record<OrderTypeKey, string> = {
+  lab: 'Search lab tests & panels…',
+  medication: 'Search medications…',
+  diet: 'Search diet orders…',
+  nursing: 'Search nursing orders…',
+  therapy: 'Search therapy & consult orders…',
+}
+
+// Order Name input: a searchable, type-aware picker that autofills Details when empty.
+// Falls back to a plain text field if the order type has no catalog.
 const OrderNameField: React.FC<{
-  isLab: boolean
+  orderType?: OrderTypeKey
   name: string
   onName: (name: string) => void
   onAutofillDetails: (detail: string) => void
   placeholder?: string
-}> = ({ isLab, name, onName, onAutofillDetails, placeholder }) => {
-  if (!isLab) {
+}> = ({ orderType, name, onName, onAutofillDetails, placeholder }) => {
+  const options = orderType ? ORDER_OPTIONS_BY_TYPE[orderType] : undefined
+  if (!options || options.length === 0) {
     return (
       <TextField
         label="Order Name"
@@ -107,7 +157,7 @@ const OrderNameField: React.FC<{
   return (
     <Autocomplete
       freeSolo
-      options={LAB_ORDER_OPTIONS}
+      options={options}
       groupBy={(o) => (typeof o === 'string' ? '' : o.group)}
       getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
       filterOptions={(opts, state) => {
@@ -130,7 +180,7 @@ const OrderNameField: React.FC<{
         <TextField
           {...params}
           label="Order Name"
-          placeholder="Search lab tests & panels…"
+          placeholder={orderType ? ORDER_SEARCH_PLACEHOLDER[orderType] : placeholder}
           size="small"
         />
       )}
@@ -589,7 +639,7 @@ const OrdersTab: React.FC = () => {
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12}>
               <OrderNameField
-                isLab={editingOrder?.type === 'lab'}
+                orderType={editingOrder?.type}
                 name={form.name}
                 onName={(n) => setForm((prev) => ({ ...prev, name: n }))}
                 onAutofillDetails={(d) =>
@@ -679,7 +729,7 @@ const OrdersTab: React.FC = () => {
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12}>
               <OrderNameField
-                isLab={TAB_ORDER_TYPES[tabValue] === 'lab'}
+                orderType={TAB_ORDER_TYPES[tabValue]}
                 name={form.name}
                 placeholder='e.g., "Acetaminophen 650mg PO Q6H PRN" or "CBC with diff"'
                 onName={(n) => setForm((prev) => ({ ...prev, name: n }))}

@@ -16,8 +16,10 @@ import {
   MenuItem,
   Stack,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material'
 import type { Encounter } from '@types'
+import { DIAGNOSES } from 'data/clinicalReference'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -407,13 +409,24 @@ const ChartReviewTab: React.FC = () => {
               </Select>
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                label="Diagnosis"
-                placeholder="Working / admitting diagnosis"
-                fullWidth
-                size="small"
-                value={form.diagnosis}
-                onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
+              <Autocomplete
+                freeSolo
+                options={DIAGNOSES}
+                inputValue={form.diagnosis}
+                onInputChange={(_, v, reason) => {
+                  if (reason !== 'reset') setForm({ ...form, diagnosis: v })
+                }}
+                onChange={(_, v) => {
+                  if (typeof v === 'string') setForm({ ...form, diagnosis: v })
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Diagnosis"
+                    placeholder="Search or type a working / admitting diagnosis…"
+                    size="small"
+                  />
+                )}
               />
             </Grid>
             <Grid item xs={12}>

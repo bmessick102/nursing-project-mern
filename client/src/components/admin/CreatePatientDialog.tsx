@@ -15,9 +15,11 @@ import {
   Chip,
   Stack,
   Typography,
+  Autocomplete,
 } from '@mui/material'
 import { Add } from '@mui/icons-material'
 import type { Course } from '@types'
+import { ALLERGENS, DIAGNOSES } from 'data/clinicalReference'
 
 interface CreatePatientPayload {
   courseId: string
@@ -183,18 +185,31 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
               Diagnoses
             </Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 1, mb: 1 }}>
-              <TextField
-                placeholder="e.g., Type 2 Diabetes"
+              <Autocomplete
+                freeSolo
                 fullWidth
-                size="small"
-                value={diagnosisInput}
-                onChange={(e) => setDiagnosisInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addToList(diagnosisInput, setDiagnosis, setDiagnosisInput, diagnosis)
-                  }
+                options={DIAGNOSES.filter((d) => !diagnosis.includes(d))}
+                inputValue={diagnosisInput}
+                onInputChange={(_, v, reason) => {
+                  if (reason !== 'reset') setDiagnosisInput(v)
                 }}
+                onChange={(_, v) => {
+                  if (typeof v === 'string')
+                    addToList(v, setDiagnosis, setDiagnosisInput, diagnosis)
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Search or type a diagnosis…"
+                    size="small"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && diagnosisInput.trim()) {
+                        e.preventDefault()
+                        addToList(diagnosisInput, setDiagnosis, setDiagnosisInput, diagnosis)
+                      }
+                    }}
+                  />
+                )}
               />
               <Button
                 variant="outlined"
@@ -222,18 +237,31 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
               Allergies
             </Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 1, mb: 1 }}>
-              <TextField
-                placeholder="e.g., Penicillin"
+              <Autocomplete
+                freeSolo
                 fullWidth
-                size="small"
-                value={allergyInput}
-                onChange={(e) => setAllergyInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addToList(allergyInput, setAllergies, setAllergyInput, allergies)
-                  }
+                options={ALLERGENS.filter((a) => !allergies.includes(a))}
+                inputValue={allergyInput}
+                onInputChange={(_, v, reason) => {
+                  if (reason !== 'reset') setAllergyInput(v)
                 }}
+                onChange={(_, v) => {
+                  if (typeof v === 'string')
+                    addToList(v, setAllergies, setAllergyInput, allergies)
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Search or type an allergy…"
+                    size="small"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && allergyInput.trim()) {
+                        e.preventDefault()
+                        addToList(allergyInput, setAllergies, setAllergyInput, allergies)
+                      }
+                    }}
+                  />
+                )}
               />
               <Button
                 variant="outlined"

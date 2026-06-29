@@ -283,6 +283,40 @@ const addLab: RequestHandler = (req, res, next) => {
   }
 }
 
+// PATCH - Add multiple lab results in one request (panel quick-add)
+const addLabsBatch: RequestHandler = (req, res, next) => {
+  try {
+    const id = req.params.id as string
+    const labs = req.body?.labs
+    if (!Array.isArray(labs) || labs.length === 0) {
+      return next({
+        statusCode: 400,
+        message: 'Request body must include a non-empty "labs" array.',
+      })
+    }
+    const patient = Patient.findById(id)
+    if (!patient) {
+      return next({
+        statusCode: 404,
+        message: 'Patient not found',
+      })
+    }
+    for (const lab of labs) {
+      patient.labs.push({
+        ...lab,
+        _id: fileDb.generateId(),
+      })
+    }
+    const updated = Patient.update(id, patient)
+    res.status(200).json({
+      message: `${labs.length} lab result(s) added successfully`,
+      data: updated,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 // PATCH - Add MAR entry (a new scheduled medication)
 const addMAREntry: RequestHandler = (req, res, next) => {
   try {
@@ -607,6 +641,7 @@ router.patch('/:id/assessments', [checkBearerToken], addAssessment, errorHandler
 router.patch('/:id/braden', [checkBearerToken], addBradenScore, errorHandler)
 router.patch('/:id/encounters', [checkBearerToken], addEncounter, errorHandler)
 router.patch('/:id/labs', [checkBearerToken], addLab, errorHandler)
+router.patch('/:id/labs/batch', [checkBearerToken], addLabsBatch, errorHandler)
 router.patch('/:id/mar-entries', [checkBearerToken], addMAREntry, errorHandler)
 router.patch('/:id/orders', [checkBearerToken], addOrder, errorHandler)
 router.patch('/:id/demographics', [checkBearerToken], updatePatientFields, errorHandler)

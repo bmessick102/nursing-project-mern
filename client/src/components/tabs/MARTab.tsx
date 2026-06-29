@@ -21,8 +21,10 @@ import {
   Grid,
   Select,
   MenuItem,
+  Autocomplete,
 } from '@mui/material'
 import type { MAREntry } from '@types'
+import { MEDICATIONS } from 'data/clinicalReference'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -75,6 +77,11 @@ const FREQUENCIES = [
 ]
 
 const TIME_OPTIONS = ['0600', '0800', '1000', '1200', '1400', '1600', '1800', '2000', '2200', '0200']
+
+// Sorted by drug class so the Autocomplete's grouped headers stay contiguous.
+const MED_OPTIONS = [...MEDICATIONS].sort(
+  (a, b) => a.drugClass.localeCompare(b.drugClass) || a.name.localeCompare(b.name),
+)
 
 const blankForm = () => ({
   medicationName: '',
@@ -360,13 +367,44 @@ const MARTab: React.FC = () => {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12}>
-              <TextField
-                label="Medication Name"
-                placeholder="e.g., Metformin, Lisinopril, Acetaminophen"
-                fullWidth
-                size="small"
-                value={form.medicationName}
-                onChange={(e) => setForm({ ...form, medicationName: e.target.value })}
+              <Autocomplete
+                freeSolo
+                options={MED_OPTIONS}
+                groupBy={(o) => (typeof o === 'string' ? '' : o.drugClass)}
+                getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
+                filterOptions={(opts, state) => {
+                  const q = state.inputValue.trim().toLowerCase()
+                  if (!q) return opts
+                  return opts.filter(
+                    (o) =>
+                      o.name.toLowerCase().includes(q) ||
+                      (o.aliases || []).some((a) => a.toLowerCase().includes(q)),
+                  )
+                }}
+                inputValue={form.medicationName}
+                onInputChange={(_, v, reason) => {
+                  if (reason === 'reset') return
+                  setForm((prev) => ({ ...prev, medicationName: v }))
+                }}
+                onChange={(_, v) => {
+                  if (v && typeof v !== 'string') {
+                    setForm((prev) => ({
+                      ...prev,
+                      medicationName: v.name,
+                      dose: prev.dose.trim() ? prev.dose : v.defaultDose,
+                      route: v.defaultRoute,
+                      frequency: v.defaultFrequency,
+                    }))
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Medication Name"
+                    placeholder="Search medications (autofills dose, route, frequency)…"
+                    size="small"
+                  />
+                )}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

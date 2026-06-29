@@ -208,6 +208,24 @@ export const useChartingApi = () => {
     [reportError],
   )
 
+  const addLabsBatch = useCallback(
+    async (patientId: string, labs: Omit<LabResult, '_id'>[]) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.patch(`/patients/${patientId}/labs/batch`, { labs })
+        return data.data as Patient
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
   const addMAREntry = useCallback(
     async (
       patientId: string,
@@ -576,6 +594,7 @@ export const useChartingApi = () => {
     addBradenScore,
     addEncounter,
     addLab,
+    addLabsBatch,
     addMAREntry,
     editResource,
     addAddendumToResource,
