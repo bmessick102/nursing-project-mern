@@ -274,6 +274,60 @@ export const MEDICATIONS: MedicationDef[] = [
   { name: 'Multivitamin', drugClass: 'Supplement', defaultDose: '1 tablet', defaultRoute: 'Oral', defaultFrequency: 'Once daily' },
 ]
 
+// Standard administration frequencies — a closed set, so these drive dropdowns.
+// Kept in sync with the Frequency options in MARTab.
+export const MED_FREQUENCIES: string[] = [
+  'Once daily',
+  'Twice daily (BID)',
+  'Three times daily (TID)',
+  'Four times daily (QID)',
+  'Every 4 hours',
+  'Every 6 hours',
+  'Every 8 hours',
+  'Every 12 hours',
+  'At bedtime (HS)',
+  'Before meals (AC)',
+  'After meals (PC)',
+  'As needed (PRN)',
+  'Once',
+  'STAT',
+]
+
+// Common dose strengths for the Dose dropdown. The medication picker additionally injects
+// the selected drug's typical dose so the chosen option is always present in the list.
+export const COMMON_DOSES: string[] = [
+  '2.5 mg',
+  '5 mg',
+  '10 mg',
+  '12.5 mg',
+  '20 mg',
+  '25 mg',
+  '40 mg',
+  '50 mg',
+  '75 mg',
+  '81 mg',
+  '100 mg',
+  '125 mg',
+  '250 mg',
+  '300 mg',
+  '325 mg',
+  '400 mg',
+  '500 mg',
+  '650 mg',
+  '750 mg',
+  '875 mg',
+  '1000 mg',
+  '1 g',
+  '2 g',
+  '1 tablet',
+  '2 tablets',
+  '1 capsule',
+  '1 puff',
+  '4 units',
+  '10 units',
+  '20 mEq',
+]
+
 /** Case-insensitive lookup by canonical name or alias. */
 export const findMedication = (name: string): MedicationDef | undefined => {
   const q = name.trim().toLowerCase()

@@ -20,11 +20,24 @@ import {
   Button,
   Stack,
   CircularProgress,
+  Autocomplete,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material'
 import { Edit as EditIcon, Add, Delete, Warning as WarningIcon } from '@mui/icons-material'
 import type { Patient } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
+import {
+  ALLERGENS,
+  DIAGNOSES,
+  MEDICATIONS,
+  MED_FREQUENCIES,
+  COMMON_DOSES,
+  findMedication,
+} from 'data/clinicalReference'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
 
@@ -35,6 +48,11 @@ interface MedicationDraft {
   dose: string
   frequency: string
 }
+
+// Medications sorted by drug class so the Autocomplete's grouped headers stay contiguous.
+const MED_OPTIONS = [...MEDICATIONS].sort(
+  (a, b) => a.drugClass.localeCompare(b.drugClass) || a.name.localeCompare(b.name),
+)
 
 const SummaryTab: React.FC = () => {
   const patient = useAppStore((s) => s.selectedPatient)
@@ -69,8 +87,8 @@ const SummaryTab: React.FC = () => {
     setMode(null)
   }
 
-  const handleAddStr = () => {
-    const v = strInput.trim()
+  const addStrValue = (raw: string) => {
+    const v = raw.trim()
     if (!v) return
     if (strList.some((x) => x.toLowerCase() === v.toLowerCase())) {
       setStrInput('')
@@ -79,6 +97,8 @@ const SummaryTab: React.FC = () => {
     setStrList([...strList, v])
     setStrInput('')
   }
+
+  const handleAddStr = () => addStrValue(strInput)
 
   const handleRemoveStr = (idx: number) => {
     setStrList(strList.filter((_, i) => i !== idx))
@@ -110,6 +130,22 @@ const SummaryTab: React.FC = () => {
       console.error('Failed to save patient fields', err)
     }
   }
+
+  // Dose/Frequency dropdown options for the medication draft. The selected drug's typical
+  // dose and the current draft value are always included so the Select never shows blank.
+  const selectedMed = findMedication(medDraft.name)
+  const doseOptions = Array.from(
+    new Set(
+      [
+        ...(selectedMed ? [selectedMed.defaultDose] : []),
+        ...COMMON_DOSES,
+        ...(medDraft.dose ? [medDraft.dose] : []),
+      ].filter(Boolean),
+    ),
+  )
+  const freqOptions = Array.from(
+    new Set([...MED_FREQUENCIES, ...(medDraft.frequency ? [medDraft.frequency] : [])].filter(Boolean)),
+  )
 
   return (
     <Box data-phi="true">
@@ -303,23 +339,37 @@ const SummaryTab: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Stack direction="row" spacing={1} sx={{ mb: 2, mt: 1 }}>
-            <TextField
-              label={mode === 'allergies' ? 'Allergen' : 'Diagnosis'}
-              placeholder={
-                mode === 'allergies'
-                  ? 'e.g., Penicillin, Latex, Shellfish'
-                  : 'e.g., Type 2 Diabetes, Hypertension'
-              }
+            <Autocomplete
+              freeSolo
               fullWidth
-              size="small"
-              value={strInput}
-              onChange={(e) => setStrInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  handleAddStr()
-                }
+              options={(mode === 'allergies' ? ALLERGENS : DIAGNOSES).filter(
+                (o) => !strList.includes(o),
+              )}
+              inputValue={strInput}
+              onInputChange={(_, v, reason) => {
+                if (reason !== 'reset') setStrInput(v)
               }}
+              onChange={(_, v) => {
+                if (typeof v === 'string') addStrValue(v)
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={mode === 'allergies' ? 'Allergen' : 'Diagnosis'}
+                  placeholder={
+                    mode === 'allergies'
+                      ? 'Search or type an allergy…'
+                      : 'Search or type a diagnosis…'
+                  }
+                  size="small"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && strInput.trim()) {
+                      e.preventDefault()
+                      handleAddStr()
+                    }
+                  }}
+                />
+              )}
             />
             <Button variant="outlined" startIcon={<Add />} onClick={handleAddStr}>
               Add
@@ -365,33 +415,77 @@ const SummaryTab: React.FC = () => {
         <DialogContent>
           <Grid container spacing={1} sx={{ mb: 2, mt: 1 }}>
             <Grid item xs={12} sm={5}>
-              <TextField
-                label="Medication"
-                fullWidth
-                size="small"
-                value={medDraft.name}
-                onChange={(e) => setMedDraft({ ...medDraft, name: e.target.value })}
+              <Autocomplete
+                freeSolo
+                options={MED_OPTIONS}
+                groupBy={(o) => (typeof o === 'string' ? '' : o.drugClass)}
+                getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
+                filterOptions={(opts, state) => {
+                  const q = state.inputValue.trim().toLowerCase()
+                  if (!q) return opts
+                  return opts.filter(
+                    (o) =>
+                      o.name.toLowerCase().includes(q) ||
+                      (o.aliases || []).some((a) => a.toLowerCase().includes(q)),
+                  )
+                }}
+                inputValue={medDraft.name}
+                onInputChange={(_, v, reason) => {
+                  if (reason === 'reset') return
+                  setMedDraft((prev) => ({ ...prev, name: v }))
+                }}
+                onChange={(_, v) => {
+                  if (v && typeof v !== 'string') {
+                    setMedDraft({
+                      name: v.name,
+                      dose: v.defaultDose,
+                      frequency: v.defaultFrequency,
+                    })
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Medication"
+                    placeholder="Search medications…"
+                    size="small"
+                  />
+                )}
               />
             </Grid>
             <Grid item xs={6} sm={3}>
-              <TextField
-                label="Dose"
-                placeholder="e.g., 500mg"
-                fullWidth
-                size="small"
-                value={medDraft.dose}
-                onChange={(e) => setMedDraft({ ...medDraft, dose: e.target.value })}
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel id="med-dose-label">Dose</InputLabel>
+                <Select
+                  labelId="med-dose-label"
+                  label="Dose"
+                  value={medDraft.dose}
+                  onChange={(e) => setMedDraft({ ...medDraft, dose: e.target.value })}
+                >
+                  {doseOptions.map((d) => (
+                    <MenuItem key={d} value={d}>
+                      {d}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={6} sm={3}>
-              <TextField
-                label="Frequency"
-                placeholder="e.g., BID"
-                fullWidth
-                size="small"
-                value={medDraft.frequency}
-                onChange={(e) => setMedDraft({ ...medDraft, frequency: e.target.value })}
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel id="med-freq-label">Frequency</InputLabel>
+                <Select
+                  labelId="med-freq-label"
+                  label="Frequency"
+                  value={medDraft.frequency}
+                  onChange={(e) => setMedDraft({ ...medDraft, frequency: e.target.value })}
+                >
+                  {freqOptions.map((f) => (
+                    <MenuItem key={f} value={f}>
+                      {f}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={1}>
               <Button
