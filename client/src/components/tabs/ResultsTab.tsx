@@ -20,12 +20,28 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Autocomplete,
+  Slider,
   Select,
   MenuItem,
   Stack,
   CircularProgress,
 } from '@mui/material'
 import type { LabResult } from '@types'
+import type { Severity } from 'utils/vitalRanges'
+import {
+  LAB_CATALOG,
+  PANELS,
+  findLabEntry,
+  findPanel,
+  panelMembers,
+  isNumericLab,
+  getLabSeverity,
+  computeLabFlag,
+  defaultNumericValue,
+  type LabCatalogEntry,
+  type NumericLab,
+} from 'data/labReference'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -60,6 +76,16 @@ const blankLab = () => ({
   flag: '' as '' | 'H' | 'L' | 'C',
 })
 
+const severityColor = (sev: Severity): string =>
+  sev === 'critical' ? '#d32f2f' : sev === 'borderline' ? '#ed6c02' : '#2e7d32'
+
+// Clamp a stored/typed value into the slider's bounds for display.
+const sliderValueFor = (def: NumericLab, raw: string): number => {
+  const v = parseFloat(raw)
+  if (Number.isNaN(v)) return defaultNumericValue(def)
+  return Math.min(Math.max(v, def.min), def.max)
+}
+
 const ResultsTab: React.FC = () => {
   const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
@@ -72,6 +98,8 @@ const ResultsTab: React.FC = () => {
   const [editReason, setEditReason] = useState('')
   const [markInErrorFor, setMarkInErrorFor] = useState<LabResult | null>(null)
   const [historyFor, setHistoryFor] = useState<LabResult | null>(null)
+  const [panelChoice, setPanelChoice] = useState<string>('')
+  const [panelLoading, setPanelLoading] = useState(false)
 
   const labs = patient?.labs || []
 
@@ -172,9 +200,131 @@ const ResultsTab: React.FC = () => {
   const active = selectedCategory || categories[0] || 'CHEMISTRY'
   const filtered = labs.filter((lab) => lab.category === active)
 
+  // When the chosen test name matches a catalog entry, drive entry with the right input:
+  // numeric → slider, qualitative → select, otherwise free text.
+  const selectedEntry = findLabEntry(form.name)
+  const numericDef =
+    selectedEntry && isNumericLab(selectedEntry) ? selectedEntry : undefined
+  const qualEntry =
+    selectedEntry && selectedEntry.kind === 'qualitative' ? selectedEntry : undefined
+
+  const applyLabEntry = (entry: LabCatalogEntry) => {
+    if (isNumericLab(entry)) {
+      const cur = parseFloat(form.value)
+      const keep = !Number.isNaN(cur) && cur >= entry.min && cur <= entry.max
+      const value = keep ? cur : defaultNumericValue(entry)
+      setForm({
+        ...form,
+        name: entry.name,
+        category: entry.category,
+        unit: entry.unit,
+        referenceRange: entry.referenceRange,
+        value: String(value),
+        flag: computeLabFlag(entry, value),
+      })
+    } else if (entry.kind === 'qualitative') {
+      const value = entry.defaultResult || (entry.options && entry.options[0]) || ''
+      setForm({
+        ...form,
+        name: entry.name,
+        category: entry.category,
+        unit: '',
+        referenceRange: entry.referenceRange,
+        value,
+        flag: '',
+      })
+    } else {
+      setForm({
+        ...form,
+        name: entry.name,
+        category: entry.category,
+        unit: entry.unit || '',
+        referenceRange: entry.referenceRange,
+        flag: '',
+      })
+    }
+  }
+
+  // Quick-add: batch-create every component of a panel with normal placeholder values.
+  const handleAddPanel = async () => {
+    if (!patient || !panelChoice) return
+    const panel = findPanel(panelChoice)
+    if (!panel) return
+    setPanelLoading(true)
+    const nowIso = new Date().toISOString()
+    try {
+      let updated = patient
+      for (const entry of panelMembers(panel)) {
+        let value = ''
+        let flag: '' | 'H' | 'L' | 'C' = ''
+        if (isNumericLab(entry)) {
+          const v = defaultNumericValue(entry)
+          value = String(v)
+          flag = computeLabFlag(entry, v)
+        } else if (entry.kind === 'qualitative') {
+          value = entry.defaultResult || (entry.options && entry.options[0]) || ''
+        }
+        const payload = {
+          category: entry.category,
+          name: entry.name,
+          value,
+          unit: isNumericLab(entry) ? entry.unit : '',
+          referenceRange: entry.referenceRange,
+          date: nowIso,
+          flag: flag === '' ? undefined : flag,
+        }
+        updated = await addLab(patient._id, payload as Omit<LabResult, '_id'>)
+      }
+      setSelectedPatient(updated)
+      setSelectedCategory(panel.category)
+      setPanelChoice('')
+    } catch (err) {
+      console.error('Failed to add panel', err)
+    } finally {
+      setPanelLoading(false)
+    }
+  }
+
   return (
     <Box data-phi="true">
       <TabHeader title="Results" actionLabel="Add Lab Result" onAction={handleOpen} />
+
+      <Paper sx={{ p: 1.5, mb: 2 }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+        >
+          <Autocomplete
+            options={PANELS}
+            getOptionLabel={(o) => o.name}
+            value={PANELS.find((p) => p.name === panelChoice) || null}
+            onChange={(_, v) => setPanelChoice(v ? v.name : '')}
+            size="small"
+            sx={{ minWidth: 280 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Quick-add panel"
+                placeholder="e.g., CMP, CBC, Lipid Panel"
+                size="small"
+              />
+            )}
+          />
+          <Button
+            variant="outlined"
+            onClick={handleAddPanel}
+            disabled={!panelChoice || panelLoading}
+            startIcon={panelLoading ? <CircularProgress size={16} /> : undefined}
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            Add Panel
+          </Button>
+          <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
+            Adds each component with normal placeholder values — edit any abnormal results.
+          </Typography>
+        </Stack>
+      </Paper>
 
       {labs.length === 0 ? (
         <EmptyState
@@ -319,45 +469,158 @@ const ResultsTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                label="Test Name"
-                placeholder="e.g., Sodium, Hemoglobin, Troponin I"
-                fullWidth
-                size="small"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              <Autocomplete
+                freeSolo
+                options={LAB_CATALOG}
+                groupBy={(option) => (typeof option === 'string' ? '' : option.category)}
+                getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}
+                filterOptions={(options, state) => {
+                  const q = state.inputValue.trim().toLowerCase()
+                  if (!q) return options
+                  return options.filter(
+                    (o) =>
+                      o.name.toLowerCase().includes(q) ||
+                      (o.aliases || []).some((a) => a.toLowerCase().includes(q)),
+                  )
+                }}
+                inputValue={form.name}
+                onInputChange={(_, newInput, reason) => {
+                  if (reason === 'reset') return
+                  const entry = findLabEntry(newInput)
+                  if (entry) {
+                    applyLabEntry(entry)
+                  } else {
+                    setForm({ ...form, name: newInput })
+                  }
+                }}
+                onChange={(_, newValue) => {
+                  if (newValue && typeof newValue !== 'string') applyLabEntry(newValue)
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Test Name"
+                    placeholder="Search e.g., Sodium, Hemoglobin, Troponin I"
+                    size="small"
+                  />
+                )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Value"
-                placeholder="e.g., 138"
-                fullWidth
-                size="small"
-                value={form.value}
-                onChange={(e) => setForm({ ...form, value: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Unit"
-                placeholder="e.g., mEq/L, mg/dL, g/dL"
-                fullWidth
-                size="small"
-                value={form.unit}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Reference Range"
-                placeholder="e.g., 136-145"
-                fullWidth
-                size="small"
-                value={form.referenceRange}
-                onChange={(e) => setForm({ ...form, referenceRange: e.target.value })}
-              />
-            </Grid>
+
+            {numericDef ? (
+              <Grid item xs={12}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="baseline"
+                  sx={{ mb: 0.5, flexWrap: 'wrap' }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Value: {sliderValueFor(numericDef, form.value)} {numericDef.unit}
+                  </Typography>
+                  {(() => {
+                    const v = sliderValueFor(numericDef, form.value)
+                    const f = computeLabFlag(numericDef, v)
+                    return f ? (
+                      <Chip
+                        label={f}
+                        size="small"
+                        sx={{ backgroundColor: getFlagColor(f), color: 'white', fontWeight: 600 }}
+                      />
+                    ) : null
+                  })()}
+                  <Typography variant="caption" sx={{ color: '#6B6B6B', ml: 'auto' }}>
+                    Reference: {numericDef.referenceRange}
+                  </Typography>
+                </Stack>
+                <Box sx={{ px: 1 }}>
+                  <Slider
+                    min={numericDef.min}
+                    max={numericDef.max}
+                    step={numericDef.step}
+                    value={sliderValueFor(numericDef, form.value)}
+                    onChange={(_, val) => {
+                      const v = val as number
+                      setForm({ ...form, value: String(v), flag: computeLabFlag(numericDef, v) })
+                    }}
+                    marks={[
+                      { value: numericDef.normalLow, label: String(numericDef.normalLow) },
+                      { value: numericDef.normalHigh, label: String(numericDef.normalHigh) },
+                    ]}
+                    valueLabelDisplay="auto"
+                    aria-label={`${numericDef.name} value`}
+                    aria-valuetext={`${sliderValueFor(numericDef, form.value)} ${numericDef.unit}`}
+                    sx={{
+                      color: severityColor(
+                        getLabSeverity(numericDef, sliderValueFor(numericDef, form.value)),
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+            ) : qualEntry ? (
+              <Grid item xs={12}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="baseline"
+                  sx={{ mb: 0.5, flexWrap: 'wrap' }}
+                >
+                  <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
+                    Result
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#6B6B6B', ml: 'auto' }}>
+                    Expected: {qualEntry.referenceRange}
+                  </Typography>
+                </Stack>
+                <Select
+                  fullWidth
+                  size="small"
+                  value={form.value}
+                  aria-label="Result"
+                  onChange={(e) => setForm({ ...form, value: e.target.value })}
+                >
+                  {(qualEntry.options || []).map((opt) => (
+                    <MenuItem key={opt} value={opt}>
+                      {opt}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Grid>
+            ) : (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Value"
+                    placeholder="e.g., 138"
+                    fullWidth
+                    size="small"
+                    value={form.value}
+                    onChange={(e) => setForm({ ...form, value: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Unit"
+                    placeholder="e.g., mEq/L, mg/dL, g/dL"
+                    fullWidth
+                    size="small"
+                    value={form.unit}
+                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Reference Range"
+                    placeholder="e.g., 136-145"
+                    fullWidth
+                    size="small"
+                    value={form.referenceRange}
+                    onChange={(e) => setForm({ ...form, referenceRange: e.target.value })}
+                  />
+                </Grid>
+              </>
+            )}
             <Grid item xs={12} sm={6}>
               <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
                 Flag

@@ -24,9 +24,11 @@ import {
   Grid,
   CircularProgress,
   IconButton,
+  Autocomplete,
 } from '@mui/material'
 import { Add, Delete, Edit as EditIcon } from '@mui/icons-material'
 import type { Order } from '@types'
+import { LAB_CATALOG, PANELS } from 'data/labReference'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -59,6 +61,82 @@ const blankDischarge = () => ({
 })
 
 const capitalize = (s: string) => (s.length === 0 ? s : s[0].toUpperCase() + s.slice(1))
+
+interface LabOrderOption {
+  name: string
+  group: string
+  detail: string
+}
+
+// Panels listed first, then individual tests grouped by category. Used to autofill the
+// Order Name + Details on the Labs sub-tab.
+const LAB_ORDER_OPTIONS: LabOrderOption[] = [
+  ...PANELS.map((p) => ({
+    name: p.name,
+    group: 'Panels',
+    detail: `Includes: ${p.members.join(', ')}`,
+  })),
+  ...LAB_CATALOG.map((e) => ({
+    name: e.name,
+    group: e.category,
+    detail: `Reference: ${e.referenceRange}`,
+  })),
+]
+
+// Order Name input: a searchable lab/panel picker on the Labs sub-tab, a plain text field
+// elsewhere. Selecting a lab/panel autofills Details when empty.
+const OrderNameField: React.FC<{
+  isLab: boolean
+  name: string
+  onName: (name: string) => void
+  onAutofillDetails: (detail: string) => void
+  placeholder?: string
+}> = ({ isLab, name, onName, onAutofillDetails, placeholder }) => {
+  if (!isLab) {
+    return (
+      <TextField
+        label="Order Name"
+        placeholder={placeholder}
+        fullWidth
+        size="small"
+        value={name}
+        onChange={(e) => onName(e.target.value)}
+      />
+    )
+  }
+  return (
+    <Autocomplete
+      freeSolo
+      options={LAB_ORDER_OPTIONS}
+      groupBy={(o) => (typeof o === 'string' ? '' : o.group)}
+      getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
+      filterOptions={(opts, state) => {
+        const q = state.inputValue.trim().toLowerCase()
+        if (!q) return opts
+        return opts.filter((o) => o.name.toLowerCase().includes(q))
+      }}
+      inputValue={name}
+      onInputChange={(_, v, reason) => {
+        if (reason === 'reset') return
+        onName(v)
+      }}
+      onChange={(_, v) => {
+        if (v && typeof v !== 'string') {
+          onName(v.name)
+          onAutofillDetails(v.detail)
+        }
+      }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Order Name"
+          placeholder="Search lab tests & panels…"
+          size="small"
+        />
+      )}
+    />
+  )
+}
 
 const OrdersTab: React.FC = () => {
   const patient = useAppStore((s) => s.selectedPatient)
@@ -510,12 +588,13 @@ const OrdersTab: React.FC = () => {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12}>
-              <TextField
-                label="Order Name"
-                fullWidth
-                size="small"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              <OrderNameField
+                isLab={editingOrder?.type === 'lab'}
+                name={form.name}
+                onName={(n) => setForm((prev) => ({ ...prev, name: n }))}
+                onAutofillDetails={(d) =>
+                  setForm((prev) => (prev.details.trim() ? prev : { ...prev, details: d }))
+                }
               />
             </Grid>
             <Grid item xs={12}>
@@ -599,13 +678,14 @@ const OrdersTab: React.FC = () => {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12}>
-              <TextField
-                label="Order Name"
+              <OrderNameField
+                isLab={TAB_ORDER_TYPES[tabValue] === 'lab'}
+                name={form.name}
                 placeholder='e.g., "Acetaminophen 650mg PO Q6H PRN" or "CBC with diff"'
-                fullWidth
-                size="small"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onName={(n) => setForm((prev) => ({ ...prev, name: n }))}
+                onAutofillDetails={(d) =>
+                  setForm((prev) => (prev.details.trim() ? prev : { ...prev, details: d }))
+                }
               />
             </Grid>
             <Grid item xs={12}>

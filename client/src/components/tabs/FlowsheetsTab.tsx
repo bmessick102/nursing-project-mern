@@ -29,6 +29,8 @@ import {
   severityPrefix,
   vitalCellAriaLabel,
   getVitalSeverity,
+  type Severity,
+  type VitalMetric,
 } from 'utils/vitalRanges'
 import EditMenu from 'components/edit/EditMenu'
 import MarkInErrorDialog from 'components/edit/MarkInErrorDialog'
@@ -49,6 +51,40 @@ const blankForm = () => ({
   painScore: 0,
   position: 'Sitting',
 })
+
+const sliderColor = (sev: Severity): string =>
+  sev === 'critical' ? '#d32f2f' : sev === 'borderline' ? '#ed6c02' : '#2e7d32'
+
+// Severity-colored slider for a numeric vital. Reuses the same range model as the
+// history table (getVitalSeverity) so the input and the display agree.
+const VitalSlider: React.FC<{
+  label: string
+  metric: VitalMetric
+  value: number
+  min: number
+  max: number
+  step: number
+  unit?: string
+  onChange: (v: number) => void
+}> = ({ label, metric, value, min, max, step, unit = '', onChange }) => (
+  <>
+    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+      {label}: {value}
+      {unit}
+    </Typography>
+    <Slider
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={(_, val) => onChange(val as number)}
+      valueLabelDisplay="auto"
+      aria-label={`${label}, ${min} to ${max}`}
+      aria-valuetext={`${value}${unit}`}
+      sx={{ color: sliderColor(getVitalSeverity(metric, value)) }}
+    />
+  </>
+)
 
 const FlowsheetsTab: React.FC = () => {
   const patient = useAppStore((s) => s.selectedPatient)
@@ -259,19 +295,26 @@ const FlowsheetsTab: React.FC = () => {
         {tabValue === 1 && (
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Temperature (°F)"
-                type="number"
+              <VitalSlider
+                label="Temperature"
+                metric="temp"
                 value={form.temp}
-                onChange={(e) => setForm({ ...form, temp: parseFloat(e.target.value) })}
-                fullWidth
+                min={93}
+                max={108}
+                step={0.1}
+                unit="°F"
+                onChange={(v) => setForm({ ...form, temp: v })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Temp Source
+              </Typography>
               <Select
                 value={form.tempSource}
                 onChange={(e) => setForm({ ...form, tempSource: e.target.value })}
                 fullWidth
+                size="small"
               >
                 <MenuItem value="Oral">Oral</MenuItem>
                 <MenuItem value="Axillary">Axillary</MenuItem>
@@ -281,57 +324,76 @@ const FlowsheetsTab: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
+              <VitalSlider
                 label="Systolic BP"
-                type="number"
+                metric="systolic"
                 value={form.systolic}
-                onChange={(e) => setForm({ ...form, systolic: parseInt(e.target.value) })}
-                fullWidth
+                min={60}
+                max={220}
+                step={1}
+                unit=" mmHg"
+                onChange={(v) => setForm({ ...form, systolic: v })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <VitalSlider
                 label="Diastolic BP"
-                type="number"
+                metric="diastolic"
                 value={form.diastolic}
-                onChange={(e) => setForm({ ...form, diastolic: parseInt(e.target.value) })}
-                fullWidth
+                min={30}
+                max={140}
+                step={1}
+                unit=" mmHg"
+                onChange={(v) => setForm({ ...form, diastolic: v })}
               />
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Heart Rate (bpm)"
-                type="number"
+              <VitalSlider
+                label="Heart Rate"
+                metric="heartRate"
                 value={form.heartRate}
-                onChange={(e) => setForm({ ...form, heartRate: parseInt(e.target.value) })}
-                fullWidth
+                min={30}
+                max={200}
+                step={1}
+                unit=" bpm"
+                onChange={(v) => setForm({ ...form, heartRate: v })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <VitalSlider
                 label="Respiratory Rate"
-                type="number"
+                metric="respiratoryRate"
                 value={form.respiratoryRate}
-                onChange={(e) => setForm({ ...form, respiratoryRate: parseInt(e.target.value) })}
-                fullWidth
+                min={4}
+                max={50}
+                step={1}
+                unit="/min"
+                onChange={(v) => setForm({ ...form, respiratoryRate: v })}
               />
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="SpO2 (%)"
-                type="number"
+              <VitalSlider
+                label="SpO2"
+                metric="spo2"
                 value={form.spo2}
-                onChange={(e) => setForm({ ...form, spo2: parseInt(e.target.value) })}
-                fullWidth
+                min={70}
+                max={100}
+                step={1}
+                unit="%"
+                onChange={(v) => setForm({ ...form, spo2: v })}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Position
+              </Typography>
               <Select
                 value={form.position}
                 onChange={(e) => setForm({ ...form, position: e.target.value })}
                 fullWidth
+                size="small"
               >
                 <MenuItem value="Lying">Lying</MenuItem>
                 <MenuItem value="Sitting">Sitting</MenuItem>
