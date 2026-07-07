@@ -21,13 +21,10 @@ import {
   Stack,
   CircularProgress,
   Autocomplete,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
 } from '@mui/material'
 import { Edit as EditIcon, Add, Delete, Warning as WarningIcon } from '@mui/icons-material'
 import type { Patient } from '@types'
+import SearchableSelect from 'components/common/SearchableSelect'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import {
@@ -454,38 +451,35 @@ const SummaryTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={6} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="med-dose-label">Dose</InputLabel>
-                <Select
-                  labelId="med-dose-label"
-                  label="Dose"
-                  value={medDraft.dose}
-                  onChange={(e) => setMedDraft({ ...medDraft, dose: e.target.value })}
-                >
-                  {doseOptions.map((d) => (
-                    <MenuItem key={d} value={d}>
-                      {d}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                freeSolo
+                options={doseOptions}
+                inputValue={medDraft.dose}
+                onInputChange={(_, v, reason) => {
+                  if (reason !== 'reset') setMedDraft((prev) => ({ ...prev, dose: v }))
+                }}
+                onChange={(_, v) => {
+                  if (typeof v === 'string') setMedDraft((prev) => ({ ...prev, dose: v }))
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Dose"
+                    placeholder="Select or type a dose…"
+                    size="small"
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={6} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="med-freq-label">Frequency</InputLabel>
-                <Select
-                  labelId="med-freq-label"
-                  label="Frequency"
-                  value={medDraft.frequency}
-                  onChange={(e) => setMedDraft({ ...medDraft, frequency: e.target.value })}
-                >
-                  {freqOptions.map((f) => (
-                    <MenuItem key={f} value={f}>
-                      {f}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <SearchableSelect
+                label="Frequency"
+                freeSolo
+                placeholder="Select or type…"
+                value={medDraft.frequency}
+                onChange={(v) => setMedDraft((prev) => ({ ...prev, frequency: v }))}
+                options={freqOptions}
+              />
             </Grid>
             <Grid item xs={12} sm={1}>
               <Button

@@ -8,14 +8,11 @@ import {
   Button,
   Grid,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   FormControlLabel,
   Switch,
   Alert,
 } from '@mui/material'
+import SearchableSelect from 'components/common/SearchableSelect'
 
 type Role = 'student' | 'instructor' | 'administrator'
 
@@ -127,19 +124,18 @@ const EditAccountDialog: React.FC<EditAccountDialogProps> = ({
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth size="small" disabled={isSelf}>
-              <InputLabel id="admin-edit-account-role">Role</InputLabel>
-              <Select
-                labelId="admin-edit-account-role"
-                label="Role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as Role)}
-              >
-                <MenuItem value="student">Student</MenuItem>
-                <MenuItem value="instructor">Instructor</MenuItem>
-                <MenuItem value="administrator">Administrator</MenuItem>
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              label="Role"
+              value={role}
+              onChange={(v) => setRole(v as Role)}
+              disabled={isSelf}
+              required
+              options={[
+                { value: 'student', label: 'Student' },
+                { value: 'instructor', label: 'Instructor' },
+                { value: 'administrator', label: 'Administrator' },
+              ]}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControlLabel

@@ -22,11 +22,10 @@ import {
   TextField,
   Autocomplete,
   Slider,
-  Select,
-  MenuItem,
   Stack,
   CircularProgress,
 } from '@mui/material'
+import SearchableSelect from 'components/common/SearchableSelect'
 import type { LabResult } from '@types'
 import type { Severity } from 'utils/vitalRanges'
 import {
@@ -440,22 +439,12 @@ const ResultsTab: React.FC = () => {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0 }}>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Category
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Category"
                 value={form.category}
-                aria-label="Category"
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              >
-                {CATEGORIES.map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c}
-                  </MenuItem>
-                ))}
-              </Select>
+                onChange={(v) => setForm({ ...form, category: v })}
+                options={CATEGORIES}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -560,32 +549,13 @@ const ResultsTab: React.FC = () => {
               </Grid>
             ) : qualEntry ? (
               <Grid item xs={12}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="baseline"
-                  sx={{ mb: 0.5, flexWrap: 'wrap' }}
-                >
-                  <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                    Result
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#6B6B6B', ml: 'auto' }}>
-                    Expected: {qualEntry.referenceRange}
-                  </Typography>
-                </Stack>
-                <Select
-                  fullWidth
-                  size="small"
+                <SearchableSelect
+                  label="Result"
                   value={form.value}
-                  aria-label="Result"
-                  onChange={(e) => setForm({ ...form, value: e.target.value })}
-                >
-                  {(qualEntry.options || []).map((opt) => (
-                    <MenuItem key={opt} value={opt}>
-                      {opt}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm({ ...form, value: v })}
+                  options={qualEntry.options || []}
+                  helperText={`Expected: ${qualEntry.referenceRange}`}
+                />
               </Grid>
             ) : (
               <>
@@ -622,21 +592,17 @@ const ResultsTab: React.FC = () => {
               </>
             )}
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Flag
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Flag"
                 value={form.flag}
-                aria-label="Flag"
-                onChange={(e) => setForm({ ...form, flag: e.target.value as '' | 'H' | 'L' | 'C' })}
-              >
-                <MenuItem value="">(none)</MenuItem>
-                <MenuItem value="H">H — High</MenuItem>
-                <MenuItem value="L">L — Low</MenuItem>
-                <MenuItem value="C">C — Critical</MenuItem>
-              </Select>
+                onChange={(v) => setForm({ ...form, flag: v as '' | 'H' | 'L' | 'C' })}
+                options={[
+                  { value: '', label: '(none)' },
+                  { value: 'H', label: 'H — High' },
+                  { value: 'L', label: 'L — Low' },
+                  { value: 'C', label: 'C — Critical' },
+                ]}
+              />
             </Grid>
             {editingId && (
               <Grid item xs={12}>

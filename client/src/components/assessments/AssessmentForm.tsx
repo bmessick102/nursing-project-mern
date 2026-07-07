@@ -5,8 +5,6 @@ import {
   Switch,
   FormControlLabel,
   TextField,
-  Select,
-  MenuItem,
   Checkbox,
   FormGroup,
   Button,
@@ -16,6 +14,7 @@ import {
   Stack,
 } from '@mui/material'
 import { CheckCircle } from '@mui/icons-material'
+import SearchableSelect from 'components/common/SearchableSelect'
 import type {
   AssessmentSystem,
   NursingAssessment,
@@ -146,25 +145,13 @@ const AssessmentForm: React.FC<AssessmentFormProps> = ({
         {fields.map((field) => {
           if (field.kind === 'select') {
             return (
-              <Box key={field.key}>
-                <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                  {field.label}
-                </Typography>
-                <Select
-                  size="small"
-                  fullWidth
-                  value={findings[field.key] ?? ''}
-                  onChange={(e) =>
-                    setFindings({ ...findings, [field.key]: e.target.value })
-                  }
-                >
-                  {field.options.map((o) => (
-                    <MenuItem key={o} value={o}>
-                      {o}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Box>
+              <SearchableSelect
+                key={field.key}
+                label={field.label}
+                value={String(findings[field.key] ?? '')}
+                onChange={(v) => setFindings({ ...findings, [field.key]: v })}
+                options={field.options}
+              />
             )
           }
           if (field.kind === 'text') {

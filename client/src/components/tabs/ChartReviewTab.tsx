@@ -12,13 +12,12 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Select,
-  MenuItem,
   Stack,
   CircularProgress,
   Autocomplete,
 } from '@mui/material'
 import type { Encounter } from '@types'
+import SearchableSelect from 'components/common/SearchableSelect'
 import { DIAGNOSES } from 'data/clinicalReference'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
@@ -363,22 +362,12 @@ const ChartReviewTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Encounter Type
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Encounter Type"
                 value={form.type}
-                aria-label="Encounter Type"
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-              >
-                {ENCOUNTER_TYPES.map((t) => (
-                  <MenuItem key={t} value={t}>
-                    {t}
-                  </MenuItem>
-                ))}
-              </Select>
+                onChange={(v) => setForm({ ...form, type: v })}
+                options={ENCOUNTER_TYPES}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -391,22 +380,12 @@ const ChartReviewTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Specialty
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Specialty"
                 value={form.specialty}
-                aria-label="Specialty"
-                onChange={(e) => setForm({ ...form, specialty: e.target.value })}
-              >
-                {SPECIALTIES.map((s) => (
-                  <MenuItem key={s} value={s}>
-                    {s}
-                  </MenuItem>
-                ))}
-              </Select>
+                onChange={(v) => setForm({ ...form, specialty: v })}
+                options={SPECIALTIES}
+              />
             </Grid>
             <Grid item xs={12}>
               <Autocomplete

@@ -77,22 +77,27 @@ const LoginPage: React.FC = () => {
               <TextField
                 fullWidth
                 label="User ID"
+                name="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
                 sx={{ mb: 2 }}
                 variant="outlined"
+                autoComplete="username"
+                autoFocus
               />
 
               <TextField
                 fullWidth
                 label="Password"
+                name="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 sx={{ mb: 2 }}
                 variant="outlined"
+                autoComplete="current-password"
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">

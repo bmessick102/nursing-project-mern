@@ -5,8 +5,6 @@ import {
   Slider,
   Stack,
   TextField,
-  Select,
-  MenuItem,
   Button,
   CircularProgress,
   Chip,
@@ -14,6 +12,7 @@ import {
   Grid,
 } from '@mui/material'
 import { CheckCircle } from '@mui/icons-material'
+import SearchableSelect from 'components/common/SearchableSelect'
 import type { NursingAssessment, Patient } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -160,64 +159,37 @@ const PainAssessment: React.FC<Props> = ({ patient, onSaved }) => {
           />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Box>
-            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-              S — Severity
-            </Typography>
-            <Select
-              fullWidth
-              size="small"
-              value={severity}
-              onChange={(e) => setSeverity(e.target.value)}
-              aria-label="S — Severity"
-            >
-              <MenuItem value="None">None</MenuItem>
-              <MenuItem value="Mild">Mild</MenuItem>
-              <MenuItem value="Moderate">Moderate</MenuItem>
-              <MenuItem value="Severe">Severe</MenuItem>
-              <MenuItem value="Excruciating">Excruciating</MenuItem>
-            </Select>
-          </Box>
+          <SearchableSelect
+            label="S — Severity"
+            value={severity}
+            onChange={setSeverity}
+            options={['None', 'Mild', 'Moderate', 'Severe', 'Excruciating']}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Box>
-            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-              T — Timing
-            </Typography>
-            <Select
-              fullWidth
-              size="small"
-              value={timing}
-              onChange={(e) => setTiming(e.target.value)}
-              aria-label="T — Timing"
-            >
-              <MenuItem value="Constant">Constant</MenuItem>
-              <MenuItem value="Intermittent">Intermittent</MenuItem>
-              <MenuItem value="With movement">With movement</MenuItem>
-              <MenuItem value="Post-procedure">Post-procedure</MenuItem>
-            </Select>
-          </Box>
+          <SearchableSelect
+            label="T — Timing"
+            value={timing}
+            onChange={setTiming}
+            freeSolo
+            options={['Constant', 'Intermittent', 'With movement', 'Post-procedure']}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Box>
-            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-              Intervention
-            </Typography>
-            <Select
-              fullWidth
-              size="small"
-              value={intervention}
-              onChange={(e) => setIntervention(e.target.value)}
-              aria-label="Intervention"
-            >
-              <MenuItem value="None this shift">None this shift</MenuItem>
-              <MenuItem value="Repositioning">Repositioning</MenuItem>
-              <MenuItem value="Heat / cold">Heat / cold</MenuItem>
-              <MenuItem value="PO analgesic">PO analgesic</MenuItem>
-              <MenuItem value="IV analgesic">IV analgesic</MenuItem>
-              <MenuItem value="Notified provider">Notified provider</MenuItem>
-            </Select>
-          </Box>
+          <SearchableSelect
+            label="Intervention"
+            value={intervention}
+            onChange={setIntervention}
+            freeSolo
+            options={[
+              'None this shift',
+              'Repositioning',
+              'Heat / cold',
+              'PO analgesic',
+              'IV analgesic',
+              'Notified provider',
+            ]}
+          />
         </Grid>
       </Grid>
 

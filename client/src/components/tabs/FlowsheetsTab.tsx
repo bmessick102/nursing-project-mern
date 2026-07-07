@@ -8,8 +8,6 @@ import {
   TextField,
   Button,
   Grid,
-  Select,
-  MenuItem,
   Slider,
   Table,
   TableBody,
@@ -38,6 +36,7 @@ import ModificationHistory from 'components/edit/ModificationHistory'
 import InErrorBanner, { inErrorRowSx } from 'components/edit/InErrorBanner'
 import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
+import SearchableSelect from 'components/common/SearchableSelect'
 import styles from 'styles/TabContent.module.css'
 
 const blankForm = () => ({
@@ -307,20 +306,13 @@ const FlowsheetsTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                Temp Source
-              </Typography>
-              <Select
+              <SearchableSelect
+                label="Temp Source"
                 value={form.tempSource}
-                onChange={(e) => setForm({ ...form, tempSource: e.target.value })}
-                fullWidth
-                size="small"
-              >
-                <MenuItem value="Oral">Oral</MenuItem>
-                <MenuItem value="Axillary">Axillary</MenuItem>
-                <MenuItem value="Rectal">Rectal</MenuItem>
-                <MenuItem value="Tympanic">Tympanic</MenuItem>
-              </Select>
+                onChange={(v) => setForm({ ...form, tempSource: v })}
+                options={['Oral', 'Axillary', 'Rectal', 'Tympanic', 'Temporal']}
+                sx={{ mt: { sm: 4 } }}
+              />
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -386,19 +378,13 @@ const FlowsheetsTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                Position
-              </Typography>
-              <Select
+              <SearchableSelect
+                label="Position"
                 value={form.position}
-                onChange={(e) => setForm({ ...form, position: e.target.value })}
-                fullWidth
-                size="small"
-              >
-                <MenuItem value="Lying">Lying</MenuItem>
-                <MenuItem value="Sitting">Sitting</MenuItem>
-                <MenuItem value="Standing">Standing</MenuItem>
-              </Select>
+                onChange={(v) => setForm({ ...form, position: v })}
+                options={['Lying', 'Sitting', 'Standing', 'Semi-Fowler', 'Fowler']}
+                sx={{ mt: { sm: 4 } }}
+              />
             </Grid>
 
             <Grid item xs={12}>

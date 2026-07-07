@@ -3,10 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Button,
   Typography,
   CircularProgress,
@@ -23,6 +19,7 @@ import { useChartingApi } from 'hooks/useChartingApi'
 import { useAppStore } from 'store/useAppStore'
 import { useAuth } from 'contexts/AuthContext'
 import { useSnackbar } from 'contexts/SnackbarContext'
+import SearchableSelect from 'components/common/SearchableSelect'
 import styles from 'styles/CourseSelectionPage.module.css'
 
 const CourseSelectionPage: React.FC = () => {
@@ -115,27 +112,22 @@ const CourseSelectionPage: React.FC = () => {
                 instructor gave you below.
               </Alert>
             ) : (
-              <FormControl fullWidth sx={{ my: 3 }}>
-                <InputLabel id="course-select-label">Department/Course</InputLabel>
-                <Select
-                  labelId="course-select-label"
+              <Box sx={{ my: 3 }}>
+                <SearchableSelect
+                  label="Department/Course"
+                  placeholder="Search your courses…"
+                  size="medium"
                   value={tempSelectedCourse?._id || ''}
-                  onChange={(e) => {
-                    const course = courses.find((c) => c._id === e.target.value)
+                  onChange={(value) => {
+                    const course = courses.find((c) => c._id === value)
                     setTempSelectedCourse(course || null)
                   }}
-                  label="Department/Course"
-                >
-                  <MenuItem value="">
-                    <em>Select a course</em>
-                  </MenuItem>
-                  {courses.map((course) => (
-                    <MenuItem key={course._id} value={course._id}>
-                      {course.name} ({course.code})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  options={courses.map((course) => ({
+                    value: course._id,
+                    label: `${course.name} (${course.code})`,
+                  }))}
+                />
+              </Box>
             )}
 
             {tempSelectedCourse && (

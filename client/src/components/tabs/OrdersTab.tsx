@@ -19,13 +19,12 @@ import {
   DialogActions,
   Button,
   TextField,
-  Select,
-  MenuItem,
   Grid,
   CircularProgress,
   IconButton,
   Autocomplete,
 } from '@mui/material'
+import SearchableSelect from 'components/common/SearchableSelect'
 import { Add, Delete, Edit as EditIcon } from '@mui/icons-material'
 import type { Order } from '@types'
 import { LAB_CATALOG, PANELS } from 'data/labReference'
@@ -659,36 +658,28 @@ const OrdersTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Status
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Status"
                 value={form.status}
-                aria-label="Status"
-                onChange={(e) => setForm({ ...form, status: e.target.value as Order['status'] })}
-              >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="completed">Completed</MenuItem>
-                <MenuItem value="discontinued">Discontinued</MenuItem>
-              </Select>
+                onChange={(v) => setForm({ ...form, status: v as Order['status'] })}
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'discontinued', label: 'Discontinued' },
+                ]}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Priority
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Priority"
                 value={form.priority}
-                aria-label="Priority"
-                onChange={(e) => setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })}
-              >
-                <MenuItem value="routine">Routine</MenuItem>
-                <MenuItem value="urgent">Urgent</MenuItem>
-                <MenuItem value="stat">STAT</MenuItem>
-              </Select>
+                onChange={(v) => setForm({ ...form, priority: v as NonNullable<Order['priority']> })}
+                options={[
+                  { value: 'routine', label: 'Routine' },
+                  { value: 'urgent', label: 'Urgent' },
+                  { value: 'stat', label: 'STAT' },
+                ]}
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -751,36 +742,28 @@ const OrdersTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Status
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Status"
                 value={form.status}
-                aria-label="Status"
-                onChange={(e) => setForm({ ...form, status: e.target.value as Order['status'] })}
-              >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="completed">Completed</MenuItem>
-                <MenuItem value="discontinued">Discontinued</MenuItem>
-              </Select>
+                onChange={(v) => setForm({ ...form, status: v as Order['status'] })}
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'discontinued', label: 'Discontinued' },
+                ]}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Priority
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Priority"
                 value={form.priority}
-                aria-label="Priority"
-                onChange={(e) => setForm({ ...form, priority: e.target.value as NonNullable<Order['priority']> })}
-              >
-                <MenuItem value="routine">Routine</MenuItem>
-                <MenuItem value="urgent">Urgent</MenuItem>
-                <MenuItem value="stat">STAT</MenuItem>
-              </Select>
+                onChange={(v) => setForm({ ...form, priority: v as NonNullable<Order['priority']> })}
+                options={[
+                  { value: 'routine', label: 'Routine' },
+                  { value: 'urgent', label: 'Urgent' },
+                  { value: 'stat', label: 'STAT' },
+                ]}
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField

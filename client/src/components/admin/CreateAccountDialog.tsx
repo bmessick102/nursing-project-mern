@@ -8,15 +8,12 @@ import {
   Button,
   Grid,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   InputAdornment,
   IconButton,
 } from '@mui/material'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
+import SearchableSelect from 'components/common/SearchableSelect'
 
 type Role = 'student' | 'instructor' | 'administrator'
 
@@ -136,19 +133,17 @@ const CreateAccountDialog: React.FC<CreateAccountDialogProps> = ({
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="admin-create-account-role">Role</InputLabel>
-              <Select
-                labelId="admin-create-account-role"
-                label="Role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as Role)}
-              >
-                <MenuItem value="student">Student</MenuItem>
-                <MenuItem value="instructor">Instructor</MenuItem>
-                <MenuItem value="administrator">Administrator</MenuItem>
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              label="Role"
+              value={role}
+              onChange={(v) => setRole(v as Role)}
+              required
+              options={[
+                { value: 'student', label: 'Student' },
+                { value: 'instructor', label: 'Instructor' },
+                { value: 'administrator', label: 'Administrator' },
+              ]}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField

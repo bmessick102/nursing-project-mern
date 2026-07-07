@@ -13,14 +13,13 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Select,
-  MenuItem,
   Button,
   FormControlLabel,
   Radio,
   RadioGroup,
   CircularProgress,
 } from '@mui/material'
+import SearchableSelect from 'components/common/SearchableSelect'
 import type { IOEntry } from '@types'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
@@ -299,17 +298,13 @@ const IOTab: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <Select
+            <SearchableSelect
+              label="Category"
               value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              fullWidth
-            >
-              {(form.type === 'intake' ? intakeCategories : outputCategories).map((cat) => (
-                <MenuItem key={cat} value={cat}>
-                  {cat}
-                </MenuItem>
-              ))}
-            </Select>
+              onChange={(v) => setForm({ ...form, category: v })}
+              options={form.type === 'intake' ? intakeCategories : outputCategories}
+              size="medium"
+            />
           </Grid>
 
           <Grid item xs={12} sm={3}>
@@ -319,15 +314,18 @@ const IOTab: React.FC = () => {
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
               fullWidth
+              inputProps={{ min: 0, inputMode: 'numeric' }}
             />
           </Grid>
 
           <Grid item xs={12} sm={3}>
-            <Select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} fullWidth>
-              <MenuItem value="mL">mL</MenuItem>
-              <MenuItem value="cc">cc</MenuItem>
-              <MenuItem value="L">L</MenuItem>
-            </Select>
+            <SearchableSelect
+              label="Unit"
+              value={form.unit}
+              onChange={(v) => setForm({ ...form, unit: v })}
+              options={['mL', 'cc', 'L']}
+              size="medium"
+            />
           </Grid>
 
           {editingId && (

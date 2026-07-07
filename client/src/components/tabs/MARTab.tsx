@@ -19,12 +19,11 @@ import {
   CircularProgress,
   Stack,
   Grid,
-  Select,
-  MenuItem,
   Autocomplete,
 } from '@mui/material'
 import type { MAREntry } from '@types'
-import { MEDICATIONS } from 'data/clinicalReference'
+import { MEDICATIONS, COMMON_DOSES } from 'data/clinicalReference'
+import SearchableSelect from 'components/common/SearchableSelect'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -408,50 +407,34 @@ const MARTab: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <SearchableSelect
                 label="Dose"
-                placeholder="e.g., 500mg, 10mg, 1 tablet"
-                fullWidth
-                size="small"
+                freeSolo
+                placeholder="e.g., 500 mg, 10 mg, 1 tablet"
                 value={form.dose}
-                onChange={(e) => setForm({ ...form, dose: e.target.value })}
+                onChange={(v) => setForm((prev) => ({ ...prev, dose: v }))}
+                options={
+                  form.dose && !COMMON_DOSES.includes(form.dose)
+                    ? [form.dose, ...COMMON_DOSES]
+                    : COMMON_DOSES
+                }
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Route
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Route"
                 value={form.route}
-                aria-label="Route"
-                onChange={(e) => setForm({ ...form, route: e.target.value })}
-              >
-                {ROUTES.map((r) => (
-                  <MenuItem key={r} value={r}>
-                    {r}
-                  </MenuItem>
-                ))}
-              </Select>
+                onChange={(v) => setForm((prev) => ({ ...prev, route: v }))}
+                options={ROUTES}
+              />
             </Grid>
             <Grid item xs={12}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                Frequency
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
+              <SearchableSelect
+                label="Frequency"
                 value={form.frequency}
-                aria-label="Frequency"
-                onChange={(e) => setForm({ ...form, frequency: e.target.value })}
-              >
-                {FREQUENCIES.map((f) => (
-                  <MenuItem key={f} value={f}>
-                    {f}
-                  </MenuItem>
-                ))}
-              </Select>
+                onChange={(v) => setForm((prev) => ({ ...prev, frequency: v }))}
+                options={FREQUENCIES}
+              />
             </Grid>
             <Grid item xs={12}>
               <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>

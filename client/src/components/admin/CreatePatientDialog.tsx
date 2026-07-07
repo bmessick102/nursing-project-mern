@@ -8,10 +8,6 @@ import {
   Button,
   Grid,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   Stack,
   Typography,
@@ -20,6 +16,7 @@ import {
 import { Add } from '@mui/icons-material'
 import type { Course } from '@types'
 import { ALLERGENS, DIAGNOSES } from 'data/clinicalReference'
+import SearchableSelect from 'components/common/SearchableSelect'
 
 interface CreatePatientPayload {
   courseId: string
@@ -118,21 +115,14 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 0 }}>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="admin-create-patient-course">Assign to Course</InputLabel>
-              <Select
-                labelId="admin-create-patient-course"
-                label="Assign to Course"
-                value={courseId}
-                onChange={(e) => setCourseId(e.target.value as string)}
-              >
-                {courses.map((c) => (
-                  <MenuItem key={c._id} value={c._id}>
-                    {c.name} ({c.code})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              label="Assign to Course"
+              placeholder="Search courses…"
+              value={courseId}
+              onChange={setCourseId}
+              required
+              options={courses.map((c) => ({ value: c._id, label: `${c.name} (${c.code})` }))}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
@@ -152,23 +142,16 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
               size="small"
               value={age}
               onChange={(e) => setAge(e.target.value)}
+              inputProps={{ min: 0, max: 130, inputMode: 'numeric' }}
             />
           </Grid>
           <Grid item xs={6} sm={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="admin-create-patient-gender">Gender</InputLabel>
-              <Select
-                labelId="admin-create-patient-gender"
-                label="Gender"
-                value={gender}
-                onChange={(e) => setGender(e.target.value as string)}
-              >
-                <MenuItem value="Female">Female</MenuItem>
-                <MenuItem value="Male">Male</MenuItem>
-                <MenuItem value="Nonbinary">Nonbinary</MenuItem>
-                <MenuItem value="Other">Other</MenuItem>
-              </Select>
-            </FormControl>
+            <SearchableSelect
+              label="Gender"
+              value={gender}
+              onChange={setGender}
+              options={['Female', 'Male', 'Nonbinary', 'Other']}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField

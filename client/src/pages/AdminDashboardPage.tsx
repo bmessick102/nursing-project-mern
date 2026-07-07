@@ -19,10 +19,6 @@ import {
   Stack,
   Tooltip,
   CircularProgress,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Snackbar,
   Alert,
 } from '@mui/material'
@@ -32,6 +28,7 @@ import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
 import { useSnackbar } from 'contexts/SnackbarContext'
 import EmptyState from 'components/common/EmptyState'
+import SearchableSelect from 'components/common/SearchableSelect'
 import CreateCourseDialog from 'components/admin/CreateCourseDialog'
 import CreatePatientDialog from 'components/admin/CreatePatientDialog'
 import RegenerateCodeDialog from 'components/admin/RegenerateCodeDialog'
@@ -356,21 +353,15 @@ const AdminDashboardPage: React.FC = () => {
                 <Typography component="h2" variant="h6" sx={{ color: '#003D82', fontWeight: 700 }}>
                   Patients
                 </Typography>
-                <FormControl size="small" sx={{ minWidth: 240 }}>
-                  <InputLabel id="admin-patient-filter">Filter by Course</InputLabel>
-                  <Select
-                    labelId="admin-patient-filter"
+                <Box sx={{ minWidth: 240 }}>
+                  <SearchableSelect
                     label="Filter by Course"
+                    placeholder="Search courses…"
                     value={filterCourseId}
-                    onChange={(e) => setFilterCourseId(e.target.value as string)}
-                  >
-                    {courses.map((c) => (
-                      <MenuItem key={c._id} value={c._id}>
-                        {c.name} ({c.code})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    onChange={setFilterCourseId}
+                    options={courses.map((c) => ({ value: c._id, label: `${c.name} (${c.code})` }))}
+                  />
+                </Box>
               </Stack>
               <Button
                 variant="contained"

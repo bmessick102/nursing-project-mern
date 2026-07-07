@@ -3,8 +3,6 @@ import {
   Box,
   Typography,
   Stack,
-  Select,
-  MenuItem,
   TextField,
   Button,
   CircularProgress,
@@ -16,6 +14,7 @@ import {
   FormControlLabel,
 } from '@mui/material'
 import { CheckCircle } from '@mui/icons-material'
+import SearchableSelect from 'components/common/SearchableSelect'
 import type { BradenScore, NursingAssessment, Patient } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -160,62 +159,48 @@ const SkinIntegrityAssessment: React.FC<Props> = ({ patient, onSaved }) => {
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
-          <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-            Color / Temperature
-          </Typography>
-          <Select
-            fullWidth
-            size="small"
+          <SearchableSelect
+            label="Color / Temperature"
             value={skinColor}
-            onChange={(e) => setSkinColor(e.target.value)}
-              aria-label="Color / Temperature"
-          >
-            <MenuItem value="Pink, warm, dry">Pink, warm, dry</MenuItem>
-            <MenuItem value="Pale">Pale</MenuItem>
-            <MenuItem value="Cyanotic">Cyanotic</MenuItem>
-            <MenuItem value="Jaundiced">Jaundiced</MenuItem>
-            <MenuItem value="Flushed">Flushed</MenuItem>
-            <MenuItem value="Mottled">Mottled</MenuItem>
-            <MenuItem value="Diaphoretic">Diaphoretic</MenuItem>
-          </Select>
+            onChange={setSkinColor}
+            freeSolo
+            options={[
+              'Pink, warm, dry',
+              'Pale',
+              'Cyanotic',
+              'Jaundiced',
+              'Flushed',
+              'Mottled',
+              'Diaphoretic',
+            ]}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-            Turgor
-          </Typography>
-          <Select
-            fullWidth
-            size="small"
+          <SearchableSelect
+            label="Turgor"
             value={turgor}
-            onChange={(e) => setTurgor(e.target.value)}
-              aria-label="Turgor"
-          >
-            <MenuItem value="Elastic">Elastic</MenuItem>
-            <MenuItem value="Tenting present">Tenting present</MenuItem>
-            <MenuItem value="Decreased">Decreased</MenuItem>
-          </Select>
+            onChange={setTurgor}
+            options={['Elastic', 'Tenting present', 'Decreased']}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-            Wounds / Pressure Injuries
-          </Typography>
-          <Select
-            fullWidth
-            size="small"
+          <SearchableSelect
+            label="Wounds / Pressure Injuries"
             value={wounds}
-            onChange={(e) => setWounds(e.target.value)}
-              aria-label="Wounds / Pressure Injuries"
-          >
-            <MenuItem value="None">None</MenuItem>
-            <MenuItem value="Stage 1 pressure injury">Stage 1 pressure injury</MenuItem>
-            <MenuItem value="Stage 2 pressure injury">Stage 2 pressure injury</MenuItem>
-            <MenuItem value="Stage 3 pressure injury">Stage 3 pressure injury</MenuItem>
-            <MenuItem value="Stage 4 pressure injury">Stage 4 pressure injury</MenuItem>
-            <MenuItem value="Unstageable">Unstageable</MenuItem>
-            <MenuItem value="Surgical incision">Surgical incision</MenuItem>
-            <MenuItem value="Laceration">Laceration</MenuItem>
-            <MenuItem value="Rash">Rash</MenuItem>
-          </Select>
+            onChange={setWounds}
+            freeSolo
+            options={[
+              'None',
+              'Stage 1 pressure injury',
+              'Stage 2 pressure injury',
+              'Stage 3 pressure injury',
+              'Stage 4 pressure injury',
+              'Unstageable',
+              'Surgical incision',
+              'Laceration',
+              'Rash',
+            ]}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
           <TextField
@@ -252,42 +237,21 @@ const SkinIntegrityAssessment: React.FC<Props> = ({ patient, onSaved }) => {
             ] as const
           ).map(([key, label]) => (
             <Grid item xs={12} sm={6} key={key}>
-              <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-                {label}
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
-                value={braden[key]}
-                onChange={(e) =>
-                  setBraden({ ...braden, [key]: Number(e.target.value) })
-                }
-              >
-                {SUB_OPTIONS.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>
-                    {o.label}
-                  </MenuItem>
-                ))}
-              </Select>
+              <SearchableSelect
+                label={label}
+                value={String(braden[key])}
+                onChange={(v) => setBraden({ ...braden, [key]: Number(v) })}
+                options={SUB_OPTIONS.map((o) => ({ value: String(o.value), label: o.label }))}
+              />
             </Grid>
           ))}
           <Grid item xs={12} sm={6}>
-            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>
-              Friction / Shear
-            </Typography>
-            <Select
-              fullWidth
-              size="small"
-              value={braden.frictionShear}
-              aria-label="Friction / Shear"
-              onChange={(e) => setBraden({ ...braden, frictionShear: Number(e.target.value) })}
-            >
-              {FRICTION_OPTIONS.map((o) => (
-                <MenuItem key={o.value} value={o.value}>
-                  {o.label}
-                </MenuItem>
-              ))}
-            </Select>
+            <SearchableSelect
+              label="Friction / Shear"
+              value={String(braden.frictionShear)}
+              onChange={(v) => setBraden({ ...braden, frictionShear: Number(v) })}
+              options={FRICTION_OPTIONS.map((o) => ({ value: String(o.value), label: o.label }))}
+            />
           </Grid>
         </Grid>
       </Paper>

@@ -8,8 +8,6 @@ import {
   CardActionArea,
   TextField,
   Button,
-  Select,
-  MenuItem,
   FormControlLabel,
   Checkbox,
   Avatar,
@@ -19,6 +17,7 @@ import {
   Stack,
 } from '@mui/material'
 import type { NursingNote } from '@types'
+import SearchableSelect from 'components/common/SearchableSelect'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -313,16 +312,12 @@ const NotesTab: React.FC = () => {
                 {mode === 'edit' ? 'Edit Note' : 'New Note'}
               </Typography>
               <Box sx={{ display: 'grid', gap: 2 }}>
-                <Select
+                <SearchableSelect
+                  label="Note Type"
                   value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                >
-                  {noteTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  onChange={(v) => setForm({ ...form, type: v })}
+                  options={noteTypes}
+                />
 
                 <TextField
                   multiline
