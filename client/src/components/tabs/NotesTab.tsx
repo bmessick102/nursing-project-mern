@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useLayoutEffect } from 'react'
 import {
   Paper,
   Typography,
@@ -18,6 +18,7 @@ import {
 } from '@mui/material'
 import type { NursingNote } from '@types'
 import SearchableSelect from 'components/common/SearchableSelect'
+import { INSERT_SECTIONS } from 'utils/noteAutofill'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -47,6 +48,8 @@ const NotesTab: React.FC = () => {
   const [filterTab, setFilterTab] = useState(0)
   const [form, setForm] = useState(blankForm())
   const [editReason, setEditReason] = useState('')
+  const contentRef = useRef<HTMLTextAreaElement>(null)
+  const [pendingCaret, setPendingCaret] = useState<number | null>(null)
 
   const [addendumFor, setAddendumFor] = useState<NursingNote | null>(null)
   const [markInErrorFor, setMarkInErrorFor] = useState<NursingNote | null>(null)
@@ -59,6 +62,18 @@ const NotesTab: React.FC = () => {
     markResourceInError,
     loading,
   } = useChartingApi()
+
+  // Restore the caret after a controlled re-render caused by inserting a data block.
+  // Must run on every render (before the early return) to satisfy the rules of hooks.
+  useLayoutEffect(() => {
+    if (pendingCaret == null) return
+    const el = contentRef.current
+    if (el) {
+      el.focus()
+      el.setSelectionRange(pendingCaret, pendingCaret)
+    }
+    setPendingCaret(null)
+  }, [pendingCaret])
 
   if (!patient) {
     return <EmptyState message="No patient selected" />
@@ -97,6 +112,16 @@ const NotesTab: React.FC = () => {
     setForm({ type: note.type, content: note.content, signed: note.signed })
     setEditReason('')
     setSelectedNote(note)
+  }
+
+  const insertSnippet = (snippet: string) => {
+    const el = contentRef.current
+    const text = form.content
+    const start = el?.selectionStart ?? text.length
+    const end = el?.selectionEnd ?? text.length
+    const block = (start > 0 && text[start - 1] !== '\n' ? '\n' : '') + snippet
+    setForm({ ...form, content: text.slice(0, start) + block + text.slice(end) })
+    setPendingCaret(start + block.length)
   }
 
   const handleSave = async () => {
@@ -319,12 +344,33 @@ const NotesTab: React.FC = () => {
                   options={noteTypes}
                 />
 
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#6B6B6B', display: 'block', mb: 0.5 }}>
+                    Insert latest data
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {INSERT_SECTIONS.map((s) => (
+                      <Button
+                        key={s.key}
+                        size="small"
+                        variant="outlined"
+                        disabled={!s.hasData(patient)}
+                        onClick={() => insertSnippet(s.build(patient))}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        {s.label}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Box>
+
                 <TextField
                   multiline
                   rows={10}
                   placeholder="Enter note content..."
                   value={form.content}
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
+                  inputRef={contentRef}
                   fullWidth
                 />
 
