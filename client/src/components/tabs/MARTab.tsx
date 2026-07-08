@@ -386,11 +386,13 @@ const MARTab: React.FC = () => {
                   setForm((prev) => ({ ...prev, medicationName: v }))
                 }}
                 onChange={(_, v) => {
+                  // Selecting a medication from the list repopulates every dependent field
+                  // with that drug's defaults, even if they were previously filled.
                   if (v && typeof v !== 'string') {
                     setForm((prev) => ({
                       ...prev,
                       medicationName: v.name,
-                      dose: prev.dose.trim() ? prev.dose : v.defaultDose,
+                      dose: v.defaultDose,
                       route: v.defaultRoute,
                       frequency: v.defaultFrequency,
                     }))

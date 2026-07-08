@@ -1,5 +1,6 @@
 import express, { type RequestHandler } from 'express'
 import checkBearerToken from '../middlewares/check-bearer-token'
+import checkAdmin from '../middlewares/check-admin'
 import errorHandler from '../middlewares/error-handler'
 import Patient from '../models/FileBasedPatient'
 import Course from '../models/FileBasedCourse'
@@ -14,6 +15,21 @@ const isEnrolledOrAdmin = (req: any, courseId: string): boolean => {
   if (!accountId) return false
   const course = Course.findById(courseId)
   return !!course && course.enrolledAccountIds.includes(accountId)
+}
+
+// Per-patient authorization: a student may only read/modify patients that belong to
+// a course they are enrolled in; administrators may access any patient. Applied to every
+// `/:id/...` route so a valid token alone can't reach an arbitrary patient by id (prevents IDOR).
+const checkPatientAccess: RequestHandler = (req, res, next) => {
+  const id = req.params.id as string
+  const patient = Patient.findById(id)
+  if (!patient) {
+    return next({ statusCode: 404, message: 'Patient not found' })
+  }
+  if (!isEnrolledOrAdmin(req, patient.courseId)) {
+    return next({ statusCode: 403, message: 'You do not have access to this patient.' })
+  }
+  next()
 }
 
 const router = express.Router()
@@ -516,10 +532,16 @@ const editEntry: RequestHandler = (req, res, next) => {
       })
     }
 
+    // Never let a client-supplied patch forge the audit trail, resurrect an in-error
+    // entry, or overwrite the id. Those transitions only happen through the dedicated
+    // mark-in-error / addendum endpoints and server-managed fields below.
+    const safePatch = stripAuditFields(patch || {})
+    delete safePatch._id
+
     const previousSnapshot = stripAuditFields(current)
     const merged = {
       ...current,
-      ...patch,
+      ...safePatch,
       _id: current._id,
       modifications: [
         ...(current.modifications || []),
@@ -630,25 +652,29 @@ const markInError: RequestHandler = (req, res, next) => {
   }
 }
 
-router.get('/', [checkBearerToken], getAllPatients, errorHandler)
+// Listing every patient across all courses is an administrator-only capability.
+router.get('/', [checkBearerToken, checkAdmin], getAllPatients, errorHandler)
 router.get('/course/:courseId', [checkBearerToken], getPatientsByCourse, errorHandler)
-router.get('/:id', [checkBearerToken], getPatientById, errorHandler)
-router.patch('/:id/vitals', [checkBearerToken], addVitals, errorHandler)
-router.patch('/:id/notes', [checkBearerToken], addNote, errorHandler)
-router.patch('/:id/mar', [checkBearerToken], signMAR, errorHandler)
-router.patch('/:id/io', [checkBearerToken], addIO, errorHandler)
-router.patch('/:id/assessments', [checkBearerToken], addAssessment, errorHandler)
-router.patch('/:id/braden', [checkBearerToken], addBradenScore, errorHandler)
-router.patch('/:id/encounters', [checkBearerToken], addEncounter, errorHandler)
-router.patch('/:id/labs', [checkBearerToken], addLab, errorHandler)
-router.patch('/:id/labs/batch', [checkBearerToken], addLabsBatch, errorHandler)
-router.patch('/:id/mar-entries', [checkBearerToken], addMAREntry, errorHandler)
-router.patch('/:id/orders', [checkBearerToken], addOrder, errorHandler)
-router.patch('/:id/demographics', [checkBearerToken], updatePatientFields, errorHandler)
+
+// All single-patient routes require course enrollment (or admin) for that patient.
+const patientGuards = [checkBearerToken, checkPatientAccess]
+router.get('/:id', patientGuards, getPatientById, errorHandler)
+router.patch('/:id/vitals', patientGuards, addVitals, errorHandler)
+router.patch('/:id/notes', patientGuards, addNote, errorHandler)
+router.patch('/:id/mar', patientGuards, signMAR, errorHandler)
+router.patch('/:id/io', patientGuards, addIO, errorHandler)
+router.patch('/:id/assessments', patientGuards, addAssessment, errorHandler)
+router.patch('/:id/braden', patientGuards, addBradenScore, errorHandler)
+router.patch('/:id/encounters', patientGuards, addEncounter, errorHandler)
+router.patch('/:id/labs', patientGuards, addLab, errorHandler)
+router.patch('/:id/labs/batch', patientGuards, addLabsBatch, errorHandler)
+router.patch('/:id/mar-entries', patientGuards, addMAREntry, errorHandler)
+router.patch('/:id/orders', patientGuards, addOrder, errorHandler)
+router.patch('/:id/demographics', patientGuards, updatePatientFields, errorHandler)
 
 // Generic audit/edit endpoints — :array ∈ encounters | labs | vitals | io | notes | mar-entries | assessments | braden | orders
-router.put('/:id/resources/:array/:entryId', [checkBearerToken], editEntry, errorHandler)
-router.post('/:id/resources/:array/:entryId/addendum', [checkBearerToken], addAddendum, errorHandler)
-router.post('/:id/resources/:array/:entryId/mark-in-error', [checkBearerToken], markInError, errorHandler)
+router.put('/:id/resources/:array/:entryId', patientGuards, editEntry, errorHandler)
+router.post('/:id/resources/:array/:entryId/addendum', patientGuards, addAddendum, errorHandler)
+router.post('/:id/resources/:array/:entryId/mark-in-error', patientGuards, markInError, errorHandler)
 
 export default router

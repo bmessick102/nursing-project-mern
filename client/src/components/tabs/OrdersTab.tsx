@@ -641,9 +641,7 @@ const OrdersTab: React.FC = () => {
                 orderType={editingOrder?.type}
                 name={form.name}
                 onName={(n) => setForm((prev) => ({ ...prev, name: n }))}
-                onAutofillDetails={(d) =>
-                  setForm((prev) => (prev.details.trim() ? prev : { ...prev, details: d }))
-                }
+                onAutofillDetails={(d) => setForm((prev) => ({ ...prev, details: d }))}
               />
             </Grid>
             <Grid item xs={12}>
@@ -724,9 +722,7 @@ const OrdersTab: React.FC = () => {
                 name={form.name}
                 placeholder='e.g., "Acetaminophen 650mg PO Q6H PRN" or "CBC with diff"'
                 onName={(n) => setForm((prev) => ({ ...prev, name: n }))}
-                onAutofillDetails={(d) =>
-                  setForm((prev) => (prev.details.trim() ? prev : { ...prev, details: d }))
-                }
+                onAutofillDetails={(d) => setForm((prev) => ({ ...prev, details: d }))}
               />
             </Grid>
             <Grid item xs={12}>
