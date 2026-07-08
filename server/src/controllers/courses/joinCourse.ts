@@ -6,6 +6,7 @@ const joinCourse: RequestHandler = (req, res, next) => {
   try {
     const accountId = (req as any).auth?.uid as string | undefined
     if (!accountId) return next({ statusCode: 401, message: 'Not authenticated' })
+    const role = (req as any).auth?.role as string | undefined
 
     const code = String(req.body?.code || '').trim()
     if (!code) return next({ statusCode: 400, message: 'Course code is required' })
@@ -23,10 +24,11 @@ const joinCourse: RequestHandler = (req, res, next) => {
     const updatedAccount = Account.addEnrolledCourse(accountId, course._id)
 
     // Return both so the client can update its store + display the newly-joined course.
+    const joinedCourse = Course.findById(course._id)
     res.status(200).json({
       message: `Joined ${course.name}`,
       data: {
-        course: Course.findById(course._id),
+        course: joinedCourse ? Course.serializeCourse(joinedCourse, role) : null,
         account: updatedAccount
           ? (() => {
               const { password: _omit, ...safe } = updatedAccount as any

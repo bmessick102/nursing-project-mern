@@ -113,6 +113,18 @@ const addEnrollment = (id: string, accountId: string): Course | undefined => {
 const findEnrolledFor = (accountId: string): Course[] =>
   readAll().filter((c) => c.enrolledAccountIds.includes(accountId))
 
+// Shape a course for the response body based on the caller's role. Admins get
+// the full record; everyone else has the secret `inviteCode` and roster
+// `enrolledAccountIds` stripped so students can't harvest codes to self-enroll.
+const isAdminRole = (role?: string): boolean =>
+  role === 'administrator' || role === 'admin'
+
+const serializeCourse = (course: Course, role?: string): Partial<Course> => {
+  if (isAdminRole(role)) return course
+  const { inviteCode: _inviteCode, enrolledAccountIds: _enrolledAccountIds, ...safe } = course
+  return safe
+}
+
 const initializeDefaultCourses = (): Course[] => {
   const existing = readAll()
   if (existing.length === 0) {
@@ -151,5 +163,6 @@ export default {
   regenerateCode,
   addEnrollment,
   findEnrolledFor,
+  serializeCourse,
   initializeDefaultCourses,
 }

@@ -64,11 +64,16 @@ const bootstrap = async () => {
   }
 
   // Print the current course invite codes so the admin knows what to hand out.
-  const courses = Course.findAll()
-  if (courses.length) {
-    console.log('🔑 Course join codes:')
-    for (const c of courses) {
-      console.log(`   ${c.name} (${c.code}): ${c.inviteCode}`)
+  // These are secret enrollment codes, so only emit them when explicitly opted in
+  // via LOG_JOIN_CODES=1 — anyone with log access (e.g. Railway dashboard) could
+  // otherwise harvest them.
+  if (process.env.LOG_JOIN_CODES === '1') {
+    const courses = Course.findAll()
+    if (courses.length) {
+      console.log('🔑 Course join codes:')
+      for (const c of courses) {
+        console.log(`   ${c.name} (${c.code}): ${c.inviteCode}`)
+      }
     }
   }
 

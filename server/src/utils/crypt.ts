@@ -6,7 +6,9 @@ class Crypt {
   constructor() {}
 
   async hash(value: string) {
-    const salt = await this.instance.genSalt(10)
+    const parsed = parseInt(process.env.BCRYPT_ROUNDS ?? '', 10)
+    const rounds = Math.min(15, Math.max(10, Number.isNaN(parsed) ? 12 : parsed))
+    const salt = await this.instance.genSalt(rounds)
     const hash = await this.instance.hash(value, salt)
 
     return hash

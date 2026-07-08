@@ -37,24 +37,16 @@ const register: RequestHandler = async (req, res, next) => {
       email?: string
     } = req.body
 
-    // Verify account username as unique
+    // Verify account username as unique. Both the username and email duplicate
+    // checks return the SAME generic message so an attacker cannot enumerate which
+    // usernames/emails are already registered.
     const foundByUsername = Account.findOne({ username })
-    if (foundByUsername) {
+    const foundByEmail = email ? Account.findOne({ email }) : null
+    if (foundByUsername || foundByEmail) {
       return next({
         statusCode: 400,
-        message: 'An account already exists with that username.',
+        message: 'Unable to register with the provided details.',
       })
-    }
-
-    // Optionally verify email uniqueness
-    if (email) {
-      const foundByEmail = Account.findOne({ email })
-      if (foundByEmail) {
-        return next({
-          statusCode: 400,
-          message: 'An account already exists with that email.',
-        })
-      }
     }
 
     // Hash password

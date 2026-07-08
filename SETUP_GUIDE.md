@@ -76,7 +76,8 @@ npm install
 Create a `.env` file in the `server/` directory:
 ```
 PORT=8080
-JWT_SECRET=your-secret-key-change-in-production
+# Generate a strong secret: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+JWT_SECRET=
 ```
 
 ### Client (.env)

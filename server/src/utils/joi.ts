@@ -1,4 +1,5 @@
 import joi from 'joi'
+import logger from './logger'
 
 class Joi {
   instance: typeof joi = joi
@@ -9,7 +10,7 @@ class Joi {
     try {
       await this.instance.object(schema).validateAsync(body)
     } catch (error: any) {
-      console.log('❌ Joi validation error:', error.message)
+      logger.debug({ err: error.message }, 'Validation failed')
 
       return {
         statusCode: 400,

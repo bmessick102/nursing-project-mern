@@ -4,7 +4,27 @@ import checkAdmin from '../middlewares/check-admin'
 import errorHandler from '../middlewares/error-handler'
 import Patient from '../models/FileBasedPatient'
 import Course from '../models/FileBasedCourse'
+import Account from '../models/FileBasedAccount'
 import fileDb from '../utils/fileDb'
+
+// Strip dangerous keys from any client-supplied object before it is spread into a
+// stored document. Blocks prototype-pollution (__proto__/constructor/prototype).
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+const sanitize = <T extends Record<string, any>>(o: T): T =>
+  Object.fromEntries(Object.entries(o || {}).filter(([k]) => !FORBIDDEN_KEYS.has(k))) as T
+
+// Per-patient array size caps — prevents unbounded growth (DoS) via repeated adds.
+const MAX_ENTRIES = {
+  vitals: 2000,
+  labs: 5000,
+  nursingNotes: 2000,
+  orders: 2000,
+  ioEntries: 5000,
+  marEntries: 500,
+  assessments: 2000,
+  bradenScores: 2000,
+  encounters: 2000,
+}
 
 // True if the caller is an administrator (any data) OR the course
 // includes the caller's account id in its enrolled list.
@@ -91,13 +111,38 @@ const getPatientById: RequestHandler = (req, res, next) => {
 const addVitals: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const vitals = req.body
+    const vitals = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    // Defensive numeric bounds: block overflow / negative garbage without rejecting
+    // legitimate clinical values (wide bounds only). Fields are optional.
+    const vitalBounds: Record<string, [number, number]> = {
+      temperature: [0, 200],
+      temp: [0, 200],
+      heartRate: [0, 1000],
+      pulse: [0, 1000],
+      respiratoryRate: [0, 1000],
+      systolic: [0, 1000],
+      diastolic: [0, 1000],
+      spo2: [0, 100],
+      oxygenSaturation: [0, 100],
+      painScore: [0, 10],
+    }
+    for (const [field, [min, max]] of Object.entries(vitalBounds)) {
+      if (field in vitals && vitals[field] !== null && vitals[field] !== '') {
+        const val = Number(vitals[field])
+        if (!Number.isFinite(val) || val < min || val > max) {
+          return next({ statusCode: 400, message: `Invalid value for ${field}.` })
+        }
+      }
+    }
+    if (patient.vitals.length >= MAX_ENTRIES.vitals) {
+      return next({ statusCode: 409, message: 'Vitals limit reached for this patient.' })
     }
     const vitalWithId = {
       ...vitals,
@@ -118,13 +163,16 @@ const addVitals: RequestHandler = (req, res, next) => {
 const addNote: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const note = req.body
+    const note = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    if (patient.nursingNotes.length >= MAX_ENTRIES.nursingNotes) {
+      return next({ statusCode: 409, message: 'Nursing note limit reached for this patient.' })
     }
     const noteWithId = {
       ...note,
@@ -145,7 +193,7 @@ const addNote: RequestHandler = (req, res, next) => {
 const signMAR: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const { entryId, scheduledTime, givenBy } = req.body
+    const { entryId, scheduledTime } = req.body
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
@@ -167,6 +215,21 @@ const signMAR: RequestHandler = (req, res, next) => {
         message: 'Scheduled time not found',
       })
     }
+    // Idempotency: never let the same administration be signed twice.
+    if (marEntry.administrations[adminIdx].status === 'given') {
+      return next({
+        statusCode: 409,
+        message: 'This administration is already signed as given.',
+      })
+    }
+    // Attribution: resolve the administering user from the authenticated account
+    // instead of trusting a client-supplied givenBy (prevents forged attribution).
+    const account = req.auth?.uid ? Account.findById(req.auth.uid) : undefined
+    const givenBy = account
+      ? [account.firstName, account.lastName].filter(Boolean).join(' ').trim() ||
+        account.username ||
+        req.auth?.uid
+      : req.auth?.uid
     marEntry.administrations[adminIdx] = {
       ...marEntry.administrations[adminIdx],
       status: 'given',
@@ -187,13 +250,16 @@ const signMAR: RequestHandler = (req, res, next) => {
 const addOrder: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const order = req.body
+    const order = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    if (patient.orders.length >= MAX_ENTRIES.orders) {
+      return next({ statusCode: 409, message: 'Order limit reached for this patient.' })
     }
     const orderWithId = {
       ...order,
@@ -249,13 +315,16 @@ const updatePatientFields: RequestHandler = (req, res, next) => {
 const addEncounter: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const encounter = req.body
+    const encounter = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    if (patient.encounters.length >= MAX_ENTRIES.encounters) {
+      return next({ statusCode: 409, message: 'Encounter limit reached for this patient.' })
     }
     const encounterWithId = {
       ...encounter,
@@ -276,13 +345,16 @@ const addEncounter: RequestHandler = (req, res, next) => {
 const addLab: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const lab = req.body
+    const lab = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    if (patient.labs.length >= MAX_ENTRIES.labs) {
+      return next({ statusCode: 409, message: 'Lab limit reached for this patient.' })
     }
     const labWithId = {
       ...lab,
@@ -317,9 +389,12 @@ const addLabsBatch: RequestHandler = (req, res, next) => {
         message: 'Patient not found',
       })
     }
+    if (patient.labs.length + labs.length > MAX_ENTRIES.labs) {
+      return next({ statusCode: 409, message: 'Lab limit reached for this patient.' })
+    }
     for (const lab of labs) {
       patient.labs.push({
-        ...lab,
+        ...sanitize(lab),
         _id: fileDb.generateId(),
       })
     }
@@ -337,13 +412,16 @@ const addLabsBatch: RequestHandler = (req, res, next) => {
 const addMAREntry: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const entry = req.body
+    const entry = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    if (patient.marEntries.length >= MAX_ENTRIES.marEntries) {
+      return next({ statusCode: 409, message: 'MAR entry limit reached for this patient.' })
     }
     const scheduledTimes: string[] = Array.isArray(entry.scheduledTimes)
       ? entry.scheduledTimes
@@ -373,13 +451,16 @@ const addMAREntry: RequestHandler = (req, res, next) => {
 const addAssessment: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const assessment = req.body
+    const assessment = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    if (patient.assessments.length >= MAX_ENTRIES.assessments) {
+      return next({ statusCode: 409, message: 'Assessment limit reached for this patient.' })
     }
     const assessmentWithId = {
       ...assessment,
@@ -400,13 +481,16 @@ const addAssessment: RequestHandler = (req, res, next) => {
 const addBradenScore: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const score = req.body
+    const score = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    if (patient.bradenScores.length >= MAX_ENTRIES.bradenScores) {
+      return next({ statusCode: 409, message: 'Braden score limit reached for this patient.' })
     }
     const scoreWithId = {
       ...score,
@@ -427,13 +511,21 @@ const addBradenScore: RequestHandler = (req, res, next) => {
 const addIO: RequestHandler = (req, res, next) => {
   try {
     const id = req.params.id as string
-    const io = req.body
+    const io = sanitize(req.body)
     const patient = Patient.findById(id)
     if (!patient) {
       return next({
         statusCode: 404,
         message: 'Patient not found',
       })
+    }
+    // Data integrity: amount must be a finite number in a sane range.
+    const amount = Number(io.amount)
+    if (!Number.isFinite(amount) || amount < 0 || amount > 100000) {
+      return next({ statusCode: 400, message: 'Invalid I/O amount.' })
+    }
+    if (patient.ioEntries.length >= MAX_ENTRIES.ioEntries) {
+      return next({ statusCode: 409, message: 'I/O limit reached for this patient.' })
     }
     const ioWithId = {
       ...io,
@@ -535,7 +627,7 @@ const editEntry: RequestHandler = (req, res, next) => {
     // Never let a client-supplied patch forge the audit trail, resurrect an in-error
     // entry, or overwrite the id. Those transitions only happen through the dedicated
     // mark-in-error / addendum endpoints and server-managed fields below.
-    const safePatch = stripAuditFields(patch || {})
+    const safePatch = stripAuditFields(sanitize(patch || {}))
     delete safePatch._id
 
     const previousSnapshot = stripAuditFields(current)
