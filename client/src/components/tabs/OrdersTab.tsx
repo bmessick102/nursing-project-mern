@@ -156,6 +156,7 @@ const OrderNameField: React.FC<{
   return (
     <Autocomplete
       freeSolo
+      fullWidth
       options={options}
       groupBy={(o) => (typeof o === 'string' ? '' : o.group)}
       getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
@@ -174,6 +175,19 @@ const OrderNameField: React.FC<{
           onName(v.name)
           onAutofillDetails(v.detail)
         }
+      }}
+      renderOption={(props, option) => {
+        const { key, ...liProps } = props as { key?: React.Key } & React.HTMLAttributes<HTMLLIElement>
+        return (
+          <li {...liProps} key={`${option.group}-${option.name}`}>
+            <span style={{ display: 'flex', flexDirection: 'column' }}>
+              <span>{option.name}</span>
+              {option.detail && (
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{option.detail}</span>
+              )}
+            </span>
+          </li>
+        )
       }}
       renderInput={(params) => (
         <TextField
