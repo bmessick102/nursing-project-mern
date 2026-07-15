@@ -367,6 +367,7 @@ const ChartReviewTab: React.FC = () => {
                 value={form.type}
                 onChange={(v) => setForm({ ...form, type: v })}
                 options={ENCOUNTER_TYPES}
+                freeSolo
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -385,6 +386,7 @@ const ChartReviewTab: React.FC = () => {
                 value={form.specialty}
                 onChange={(v) => setForm({ ...form, specialty: v })}
                 options={SPECIALTIES}
+                freeSolo
               />
             </Grid>
             <Grid item xs={12}>

@@ -304,6 +304,7 @@ const IOTab: React.FC = () => {
               onChange={(v) => setForm({ ...form, category: v })}
               options={form.type === 'intake' ? intakeCategories : outputCategories}
               size="medium"
+              freeSolo
             />
           </Grid>
 
@@ -325,6 +326,7 @@ const IOTab: React.FC = () => {
               onChange={(v) => setForm({ ...form, unit: v })}
               options={['mL', 'cc', 'L']}
               size="medium"
+              freeSolo
             />
           </Grid>
 

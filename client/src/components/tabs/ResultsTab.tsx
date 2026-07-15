@@ -444,6 +444,7 @@ const ResultsTab: React.FC = () => {
                 value={form.category}
                 onChange={(v) => setForm({ ...form, category: v })}
                 options={CATEGORIES}
+                freeSolo
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -555,6 +556,7 @@ const ResultsTab: React.FC = () => {
                   onChange={(v) => setForm({ ...form, value: v })}
                   options={qualEntry.options || []}
                   helperText={`Expected: ${qualEntry.referenceRange}`}
+                  freeSolo
                 />
               </Grid>
             ) : (

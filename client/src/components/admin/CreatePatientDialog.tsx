@@ -12,6 +12,8 @@ import {
   Stack,
   Typography,
   Autocomplete,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material'
 import { Add } from '@mui/icons-material'
 import type { Course } from '@types'
@@ -27,6 +29,9 @@ interface CreatePatientPayload {
   diagnosis: string[]
   allergies: string[]
   medications?: { name: string; dose: string; frequency: string }[]
+  isCaseStudy?: boolean
+  availableFrom?: string
+  availableUntil?: string
 }
 
 interface CreatePatientDialogProps {
@@ -55,6 +60,9 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
   const [diagnosisInput, setDiagnosisInput] = useState('')
   const [allergies, setAllergies] = useState<string[]>([])
   const [allergyInput, setAllergyInput] = useState('')
+  const [isCaseStudy, setIsCaseStudy] = useState(true)
+  const [availableFrom, setAvailableFrom] = useState(() => new Date().toISOString().slice(0, 10))
+  const [availableUntil, setAvailableUntil] = useState('')
 
   React.useEffect(() => {
     if (open) {
@@ -67,6 +75,9 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
       setDiagnosisInput('')
       setAllergies([])
       setAllergyInput('')
+      setIsCaseStudy(true)
+      setAvailableFrom(new Date().toISOString().slice(0, 10))
+      setAvailableUntil('')
     }
   }, [open, defaultCourseId, courses])
 
@@ -98,6 +109,10 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
 
   const handleSubmit = async () => {
     if (!canSubmit) return
+    if (isCaseStudy && availableUntil && availableUntil < availableFrom) {
+      alert('The "Available until" date cannot be before the "Available from" date.')
+      return
+    }
     await onSubmit({
       courseId,
       name: name.trim(),
@@ -106,6 +121,9 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
       roomNumber: roomNumber.trim(),
       diagnosis,
       allergies,
+      isCaseStudy,
+      availableFrom: isCaseStudy ? availableFrom : undefined,
+      availableUntil: isCaseStudy && availableUntil ? availableUntil : undefined,
     })
   }
 
@@ -161,6 +179,41 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
               value={roomNumber}
               onChange={(e) => setRoomNumber(e.target.value)}
             />
+          </Grid>
+
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isCaseStudy}
+                  onChange={(e) => setIsCaseStudy(e.target.checked)}
+                />
+              }
+              label="Scheduled case study (release to students during a date window)"
+            />
+            {isCaseStudy && (
+              <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                <TextField
+                  label="Available from"
+                  type="date"
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  value={availableFrom}
+                  onChange={(e) => setAvailableFrom(e.target.value)}
+                />
+                <TextField
+                  label="Available until (optional)"
+                  type="date"
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  value={availableUntil}
+                  onChange={(e) => setAvailableUntil(e.target.value)}
+                  inputProps={{ min: availableFrom }}
+                />
+              </Stack>
+            )}
           </Grid>
 
           <Grid item xs={12}>

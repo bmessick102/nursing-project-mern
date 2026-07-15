@@ -66,6 +66,14 @@ export interface Encounter extends Auditable {
   plan?: string
 }
 
+export interface InstructorComment {
+  _id: string
+  timestamp: string
+  author: string
+  authorRole: string
+  content: string
+}
+
 export interface NursingNote extends Auditable {
   _id: string
   date: string
@@ -75,6 +83,7 @@ export interface NursingNote extends Auditable {
   authorRole: string
   content: string
   signed: boolean
+  instructorComments?: InstructorComment[]
 }
 
 export interface MARAdministration extends Auditable {
@@ -155,6 +164,12 @@ export interface BradenScore extends Auditable {
 export interface Patient {
   _id: string
   courseId: string
+  isCaseStudy?: boolean // true on an admin-authored case-study TEMPLATE
+  availableFrom?: string // ISO date (YYYY-MM-DD); window opens. Absent = open immediately
+  availableUntil?: string // ISO date; window closes (inclusive through end of day). Absent = open-ended
+  ownerAccountId?: string // set only on a per-student INSTANCE (the student's account uid)
+  templateId?: string // on an instance, the source template's _id
+  instructorNotes?: NursingNote[] // derived/read-only: a live copy of the case-study template's nursingNotes, injected by the API for a student's instance. Not persisted.
   name: string
   age: number
   gender: string
@@ -227,6 +242,11 @@ const findByCourse = (courseId: string): Patient[] => {
   return patients.filter((p: Patient) => p.courseId === courseId).map(normalizePatient)
 }
 
+const findByTemplate = (templateId: string): Patient[] => {
+  const patients = fileDb.readCollection(COLLECTION) as Patient[]
+  return patients.filter((p: Patient) => p.templateId === templateId).map(normalizePatient)
+}
+
 const create = (data: Omit<Patient, '_id' | 'createdAt' | 'updatedAt'>) => {
   const patients = fileDb.readCollection(COLLECTION)
   const newPatient: Patient = {
@@ -261,6 +281,73 @@ const update = (id: string, data: Partial<Patient>): Patient | undefined => {
   patients[idx] = updated
   fileDb.writeCollection(COLLECTION, patients)
   return normalizePatient(patients[idx])
+}
+
+// Find a student's private instance of a case-study template.
+const findInstance = (templateId: string, ownerAccountId: string): Patient | undefined => {
+  const patients = fileDb.readCollection(COLLECTION) as Patient[]
+  const patient = patients.find(
+    (p: Patient) => p.templateId === templateId && p.ownerAccountId === ownerAccountId,
+  )
+  return patient ? normalizePatient(patient) : undefined
+}
+
+// Deep-clone an admin-authored case-study template into a fresh per-student
+// instance. Regenerates all clinical-entry ids and persists via create().
+const cloneTemplateForStudent = (template: Patient, ownerAccountId: string): Patient => {
+  const clone: Patient =
+    typeof structuredClone === 'function'
+      ? structuredClone(template)
+      : JSON.parse(JSON.stringify(template))
+
+  clone.ownerAccountId = ownerAccountId
+  clone.templateId = template._id
+  clone.isCaseStudy = false
+  delete clone.availableFrom
+  delete clone.availableUntil
+
+  // The student's own-notes side starts blank. The instructor's notes are
+  // surfaced live via the derived `instructorNotes` field, not copied in.
+  clone.nursingNotes = []
+
+  // Regenerate clinical-entry ids defensively so an instance never shares ids
+  // with its template or sibling instances.
+  const regenIds = (entries?: Array<{ _id?: string; addenda?: Addendum[] }>) => {
+    if (!Array.isArray(entries)) return
+    entries.forEach((entry) => {
+      entry._id = fileDb.generateId()
+      if (Array.isArray(entry.addenda)) {
+        entry.addenda.forEach((a) => {
+          a._id = fileDb.generateId()
+        })
+      }
+    })
+  }
+
+  regenIds(clone.vitals)
+  regenIds(clone.labs)
+  regenIds(clone.encounters)
+  regenIds(clone.nursingNotes)
+  regenIds(clone.ioEntries)
+  regenIds(clone.orders)
+  regenIds(clone.assessments)
+  regenIds(clone.bradenScores)
+
+  regenIds(clone.marEntries)
+  if (Array.isArray(clone.marEntries)) {
+    clone.marEntries.forEach((entry) => {
+      if (Array.isArray(entry.administrations)) {
+        entry.administrations.forEach((admin) => {
+          admin._id = fileDb.generateId()
+        })
+      }
+    })
+  }
+
+  // Strip the identity/timestamp fields so create() assigns fresh ones the same
+  // way it does for any other new patient.
+  const { _id, createdAt, updatedAt, ...data } = clone
+  return create(data as Omit<Patient, '_id' | 'createdAt' | 'updatedAt'>)
 }
 
 const initializeDefaultPatients = () => {
@@ -715,7 +802,10 @@ export default {
   findAll,
   findById,
   findByCourse,
+  findByTemplate,
   create,
   update,
+  findInstance,
+  cloneTemplateForStudent,
   initializeDefaultPatients,
 }

@@ -15,6 +15,19 @@ import type {
   Order,
 } from '@types'
 
+type CaseStudyInstancesResponse = {
+  templateId: string
+  templateName: string
+  courseId: string
+  instances: Array<{
+    _id: string
+    ownerAccountId: string
+    studentName: string
+    noteCount: number
+    updatedAt: string
+  }>
+}
+
 export const useChartingApi = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -487,11 +500,46 @@ export const useChartingApi = () => {
       diagnosis: string[]
       allergies: string[]
       medications?: { name: string; dose: string; frequency: string }[]
+      isCaseStudy?: boolean
+      availableFrom?: string
+      availableUntil?: string
     }) => {
       setLoading(true)
       setError(null)
       try {
         const { data } = await axios.post('/admin/patients', payload)
+        return data.data as Patient
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminUpdatePatient = useCallback(
+    async (
+      id: string,
+      patch: Partial<{
+        isCaseStudy: boolean
+        availableFrom: string
+        availableUntil: string
+        name: string
+        age: number
+        gender: string
+        roomNumber: string
+        diagnosis: string[]
+        allergies: string[]
+        medications: { name: string; dose: string; frequency: string }[]
+      }>,
+    ) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.patch(`/admin/patients/${id}`, patch)
         return data.data as Patient
       } catch (err: any) {
         const errorMsg = err?.response?.data?.message || err.message
@@ -580,6 +628,45 @@ export const useChartingApi = () => {
     }
   }, [reportError])
 
+  const adminListInstances = useCallback(
+    async (templateId: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.get(`/admin/patients/${templateId}/instances`)
+        return data.data as CaseStudyInstancesResponse
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminAddNoteComment = useCallback(
+    async (patientId: string, noteId: string, content: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post(
+          `/admin/patients/${patientId}/notes/${noteId}/comments`,
+          { content },
+        )
+        return data.data as Patient
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
   return {
     loading,
     error,
@@ -607,8 +694,11 @@ export const useChartingApi = () => {
     adminUpdateCourse,
     adminRegenerateCourseCode,
     adminCreatePatient,
+    adminUpdatePatient,
     adminListAccounts,
     adminCreateAccount,
     adminUpdateAccount,
+    adminListInstances,
+    adminAddNoteComment,
   }
 }

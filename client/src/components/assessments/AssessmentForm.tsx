@@ -151,6 +151,7 @@ const AssessmentForm: React.FC<AssessmentFormProps> = ({
                 value={String(findings[field.key] ?? '')}
                 onChange={(v) => setFindings({ ...findings, [field.key]: v })}
                 options={field.options}
+                freeSolo
               />
             )
           }

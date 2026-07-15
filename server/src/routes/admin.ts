@@ -9,6 +9,9 @@ import listAccounts from '../controllers/admin/listAccounts'
 import createAccount from '../controllers/admin/createAccount'
 import updateAccount from '../controllers/admin/updateAccount'
 import createPatient from '../controllers/admin/createPatient'
+import updatePatient from '../controllers/admin/updatePatient'
+import listInstances from '../controllers/admin/listInstances'
+import addNoteComment from '../controllers/admin/addNoteComment'
 
 const router = express.Router()
 const adminGuard = [checkBearerToken, checkAdmin]
@@ -20,6 +23,9 @@ router.post('/courses/:id/regenerate-code', adminGuard, regenerateCourseCode, er
 
 // Patients
 router.post('/patients', adminGuard, createPatient, errorHandler)
+router.patch('/patients/:id', adminGuard, updatePatient, errorHandler)
+router.get('/patients/:templateId/instances', adminGuard, listInstances, errorHandler)
+router.post('/patients/:id/notes/:noteId/comments', adminGuard, addNoteComment, errorHandler)
 
 // Accounts
 router.get('/accounts', adminGuard, listAccounts, errorHandler)

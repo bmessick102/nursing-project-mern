@@ -15,6 +15,9 @@ const createPatient: RequestHandler = async (req, res, next) => {
         diagnosis: joi.instance.array().items(joi.instance.string().max(200)).optional(),
         allergies: joi.instance.array().items(joi.instance.string().max(200)).optional(),
         medications: joi.instance.array().items(joi.instance.object()).optional(),
+        isCaseStudy: joi.instance.boolean().optional(),
+        availableFrom: joi.instance.string().isoDate().allow('').optional(),
+        availableUntil: joi.instance.string().isoDate().allow('').optional(),
       },
       req.body,
     )
@@ -29,10 +32,21 @@ const createPatient: RequestHandler = async (req, res, next) => {
       diagnosis,
       allergies,
       medications,
+      isCaseStudy,
+      availableFrom,
+      availableUntil,
     } = req.body || {}
 
     if (!Course.findById(courseId)) {
       return next({ statusCode: 400, message: 'courseId does not match any existing course' })
+    }
+
+    if (
+      availableFrom &&
+      availableUntil &&
+      new Date(availableUntil).getTime() < new Date(availableFrom).getTime()
+    ) {
+      return next({ statusCode: 400, message: 'availableUntil must be on or after availableFrom' })
     }
 
     const created = Patient.create({
@@ -44,6 +58,9 @@ const createPatient: RequestHandler = async (req, res, next) => {
       diagnosis: Array.isArray(diagnosis) ? diagnosis : [],
       allergies: Array.isArray(allergies) ? allergies : [],
       medications: Array.isArray(medications) ? medications : [],
+      isCaseStudy: isCaseStudy ?? true,
+      availableFrom: availableFrom || undefined,
+      availableUntil: availableUntil || undefined,
       vitals: [],
       labs: [],
       encounters: [],

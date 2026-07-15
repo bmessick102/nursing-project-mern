@@ -2,7 +2,7 @@ import express, { type RequestHandler } from 'express'
 import checkBearerToken from '../middlewares/check-bearer-token'
 import checkAdmin from '../middlewares/check-admin'
 import errorHandler from '../middlewares/error-handler'
-import Patient from '../models/FileBasedPatient'
+import Patient, { type Patient as PatientRecord } from '../models/FileBasedPatient'
 import Course from '../models/FileBasedCourse'
 import Account from '../models/FileBasedAccount'
 import fileDb from '../utils/fileDb'
@@ -26,15 +26,45 @@ const MAX_ENTRIES = {
   encounters: 2000,
 }
 
+// Inject the derived, read-only `instructorNotes` onto a student instance response:
+// a live copy of the source case-study template's nursingNotes. Never persisted; the
+// templateId guard means templates/legacy patients pass through untouched.
+const withInstructorNotes = (patient: PatientRecord): PatientRecord => {
+  if (!patient?.templateId) return patient
+  const template = Patient.findById(patient.templateId)
+  return { ...patient, instructorNotes: template?.nursingNotes ?? [] }
+}
+
+// True if the caller is an administrator (role-based, any data).
+const isAdmin = (req: any): boolean => {
+  const role = req.auth?.role
+  return role === 'administrator' || role === 'admin'
+}
+
 // True if the caller is an administrator (any data) OR the course
 // includes the caller's account id in its enrolled list.
 const isEnrolledOrAdmin = (req: any, courseId: string): boolean => {
-  const role = req.auth?.role
-  if (role === 'administrator' || role === 'admin') return true
+  if (isAdmin(req)) return true
   const accountId = req.auth?.uid
   if (!accountId) return false
   const course = Course.findById(courseId)
   return !!course && course.enrolledAccountIds.includes(accountId)
+}
+
+// Case-study availability window helpers. A template is visible to students only
+// between availableFrom (inclusive) and availableUntil (inclusive through end of day).
+const endOfDay = (iso: string): number => {
+  const d = new Date(iso)
+  d.setHours(23, 59, 59, 999)
+  return d.getTime()
+}
+const isWithinWindow = (
+  p: { availableFrom?: string; availableUntil?: string },
+  now = Date.now(),
+): boolean => {
+  if (p.availableFrom && now < new Date(p.availableFrom).getTime()) return false
+  if (p.availableUntil && now > endOfDay(p.availableUntil)) return false
+  return true
 }
 
 // Per-patient authorization: a student may only read/modify patients that belong to
@@ -46,6 +76,24 @@ const checkPatientAccess: RequestHandler = (req, res, next) => {
   if (!patient) {
     return next({ statusCode: 404, message: 'Patient not found' })
   }
+  // Administrators may reach any patient (templates, instances, or legacy shared).
+  if (isAdmin(req)) {
+    return next()
+  }
+  // A case-study TEMPLATE is never reachable by a student directly — they work on
+  // their own private instance (surfaced/created via the course listing).
+  if (patient.isCaseStudy) {
+    return next({ statusCode: 403, message: 'You do not have access to this patient.' })
+  }
+  // A per-student INSTANCE is reachable only by its owner, and only while that
+  // student remains enrolled in the instance's course.
+  if (patient.ownerAccountId) {
+    if (patient.ownerAccountId === req.auth?.uid && isEnrolledOrAdmin(req, patient.courseId)) {
+      return next()
+    }
+    return next({ statusCode: 403, message: 'You do not have access to this patient.' })
+  }
+  // Legacy shared patient — original behavior: enrolled students (or admins) allowed.
   if (!isEnrolledOrAdmin(req, patient.courseId)) {
     return next({ statusCode: 403, message: 'You do not have access to this patient.' })
   }
@@ -78,9 +126,53 @@ const getPatientsByCourse: RequestHandler = (req, res, next) => {
       })
     }
     const patients = Patient.findByCourse(courseId)
+
+    // Administrator preview: templates + legacy patients, regardless of window.
+    // Per-student instances are private working copies and are never surfaced here.
+    if (isAdmin(req)) {
+      const data = patients.filter((p) => !p.ownerAccountId)
+      res.status(200).json({
+        message: 'Successfully retrieved patients',
+        data,
+      })
+      return
+    }
+
+    // Student view. Kept fully synchronous (no await between reading patients and
+    // writing clones) so the lazy clone-on-first-read can't race itself.
+    const uid = req.auth?.uid as string
+    const data: typeof patients = []
+    for (const p of patients) {
+      if (p.isCaseStudy) {
+        // Templates outside their availability window are omitted entirely.
+        if (!isWithinWindow(p)) continue
+        // Get-or-create this student's private instance of the template.
+        let instance = Patient.findInstance(p._id, uid)
+        if (!instance) {
+          instance = Patient.cloneTemplateForStudent(p, uid)
+        } else {
+          // Defensive dedupe: if multiple instances somehow exist for this
+          // template + student, prefer the earliest-created one.
+          const dupes = patients.filter(
+            (q) => q.templateId === p._id && q.ownerAccountId === uid,
+          )
+          if (dupes.length > 1) {
+            instance = dupes.reduce((a, b) => (a.createdAt <= b.createdAt ? a : b))
+          }
+        }
+        data.push(withInstructorNotes(instance))
+      } else if (p.ownerAccountId) {
+        // Another surface for instances would leak other students' work — the
+        // instances we expose come from the template loop above. Skip here.
+        continue
+      } else {
+        // Legacy shared patient — included as today.
+        data.push(p)
+      }
+    }
     res.status(200).json({
       message: 'Successfully retrieved patients',
-      data: patients,
+      data,
     })
   } catch (error) {
     next(error)
@@ -100,7 +192,7 @@ const getPatientById: RequestHandler = (req, res, next) => {
     }
     res.status(200).json({
       message: 'Successfully retrieved patient',
-      data: patient,
+      data: withInstructorNotes(patient),
     })
   } catch (error) {
     next(error)

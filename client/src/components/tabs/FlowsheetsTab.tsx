@@ -312,6 +312,7 @@ const FlowsheetsTab: React.FC = () => {
                 onChange={(v) => setForm({ ...form, tempSource: v })}
                 options={['Oral', 'Axillary', 'Rectal', 'Tympanic', 'Temporal']}
                 sx={{ mt: { sm: 4 } }}
+                freeSolo
               />
             </Grid>
 
@@ -384,6 +385,7 @@ const FlowsheetsTab: React.FC = () => {
                 onChange={(v) => setForm({ ...form, position: v })}
                 options={['Lying', 'Sitting', 'Standing', 'Semi-Fowler', 'Fowler']}
                 sx={{ mt: { sm: 4 } }}
+                freeSolo
               />
             </Grid>
 

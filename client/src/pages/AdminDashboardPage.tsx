@@ -22,7 +22,7 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material'
-import { Refresh, ContentCopy, Edit as EditIcon } from '@mui/icons-material'
+import { Refresh, ContentCopy, Edit as EditIcon, OpenInNew } from '@mui/icons-material'
 import type { Course, Patient } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -50,6 +50,14 @@ interface AdminAccount {
   active?: boolean
 }
 
+interface StudentInstanceRow {
+  _id: string
+  ownerAccountId: string
+  studentName: string
+  noteCount: number
+  updatedAt: string
+}
+
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const {
@@ -61,6 +69,7 @@ const AdminDashboardPage: React.FC = () => {
     adminListAccounts,
     adminCreateAccount,
     adminUpdateAccount,
+    adminListInstances,
     loading,
   } = useChartingApi()
   const { displayName, username } = useCurrentUser()
@@ -86,6 +95,10 @@ const AdminDashboardPage: React.FC = () => {
   const [copySnack, setCopySnack] = useState<string | null>(null)
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdminAccount | null>(null)
+  const [reviewCourseId, setReviewCourseId] = useState('')
+  const [reviewCaseStudies, setReviewCaseStudies] = useState<Patient[]>([])
+  const [reviewCaseStudyId, setReviewCaseStudyId] = useState('')
+  const [reviewInstances, setReviewInstances] = useState<StudentInstanceRow[]>([])
 
   const loadCourses = useCallback(async () => {
     try {
@@ -196,6 +209,64 @@ const AdminDashboardPage: React.FC = () => {
     }
   }
 
+  const handleOpenChart = (p: Patient) => {
+    const course = courses.find((c) => c._id === p.courseId)
+    if (course) setSelectedCourse(course)
+    setSelectedPatient(p)
+    navigate(`/patient/${p._id}/summary`)
+  }
+
+  const loadReviewCaseStudies = useCallback(
+    async (courseId: string) => {
+      if (!courseId) {
+        setReviewCaseStudies([])
+        return
+      }
+      try {
+        const data = await fetchPatientsByCourse(courseId)
+        setReviewCaseStudies(data.filter((p) => p.isCaseStudy))
+      } catch (err) {
+        console.error('Failed to load case studies', err)
+      }
+    },
+    [fetchPatientsByCourse],
+  )
+
+  const loadReviewInstances = useCallback(
+    async (templateId: string) => {
+      if (!templateId) {
+        setReviewInstances([])
+        return
+      }
+      try {
+        const data = await adminListInstances(templateId)
+        setReviewInstances(data.instances as StudentInstanceRow[])
+      } catch (err) {
+        console.error('Failed to load student instances', err)
+      }
+    },
+    [adminListInstances],
+  )
+
+  const handleReviewCourseChange = (courseId: string) => {
+    setReviewCourseId(courseId)
+    setReviewCaseStudyId('')
+    setReviewInstances([])
+    loadReviewCaseStudies(courseId)
+  }
+
+  const handleReviewCaseStudyChange = (id: string) => {
+    setReviewCaseStudyId(id)
+    loadReviewInstances(id)
+  }
+
+  const handleOpenStudentNotes = (row: StudentInstanceRow) => {
+    const course = courses.find((c) => c._id === reviewCourseId)
+    if (course) setSelectedCourse(course)
+    setSelectedPatient(null)
+    navigate(`/patient/${row._id}/notes`)
+  }
+
   const copyCode = (code?: string) => {
     if (!code) return
     if (navigator.clipboard) {
@@ -249,6 +320,7 @@ const AdminDashboardPage: React.FC = () => {
             <Tab label={`Courses (${courses.length})`} />
             <Tab label={`Patients (${patients.length})`} />
             <Tab label={`Accounts (${accounts.length})`} />
+            <Tab label="Case Study Review" />
           </Tabs>
         </Container>
       </Box>
@@ -393,6 +465,8 @@ const AdminDashboardPage: React.FC = () => {
                       <TableCell>Room</TableCell>
                       <TableCell>Diagnoses</TableCell>
                       <TableCell>Allergies</TableCell>
+                      <TableCell>Availability</TableCell>
+                      <TableCell>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -407,6 +481,28 @@ const AdminDashboardPage: React.FC = () => {
                         </TableCell>
                         <TableCell sx={{ color: '#B71C1C', fontSize: 13, fontWeight: 600 }}>
                           {(p.allergies || []).join(', ') || '—'}
+                        </TableCell>
+                        <TableCell sx={{ color: '#595959', fontSize: 13 }}>
+                          {p.isCaseStudy
+                            ? p.availableFrom
+                              ? `${new Date(p.availableFrom).toLocaleDateString()} – ${
+                                  p.availableUntil
+                                    ? new Date(p.availableUntil).toLocaleDateString()
+                                    : 'open'
+                                }`
+                              : 'immediate'
+                            : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title="Open chart · edit clinical data">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenChart(p)}
+                              aria-label={`open chart for ${p.name}`}
+                            >
+                              <OpenInNew fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -522,6 +618,85 @@ const AdminDashboardPage: React.FC = () => {
                         </TableRow>
                       )
                     })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+        )}
+
+        {/* CASE STUDY REVIEW */}
+        {tab === 3 && (
+          <Box>
+            <Typography component="h2" variant="h6" sx={{ color: '#003D82', fontWeight: 700, mb: 2 }}>
+              Case Study Review
+            </Typography>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 3 }}>
+              <Box sx={{ minWidth: 260 }}>
+                <SearchableSelect
+                  label="Course"
+                  placeholder="Search courses…"
+                  value={reviewCourseId}
+                  onChange={handleReviewCourseChange}
+                  options={courses.map((c) => ({ value: c._id, label: `${c.name} (${c.code})` }))}
+                />
+              </Box>
+              <Box sx={{ minWidth: 260 }}>
+                <SearchableSelect
+                  label="Case study"
+                  placeholder="Select a case study…"
+                  value={reviewCaseStudyId}
+                  onChange={handleReviewCaseStudyChange}
+                  options={reviewCaseStudies.map((p) => ({ value: p._id, label: p.name }))}
+                />
+              </Box>
+            </Stack>
+
+            {!reviewCourseId ? (
+              <EmptyState message="Select a course to begin." />
+            ) : reviewCaseStudies.length === 0 ? (
+              <EmptyState message="This course has no case-study patients yet." />
+            ) : !reviewCaseStudyId ? (
+              <EmptyState message="Select a case study to see student work." />
+            ) : reviewInstances.length === 0 ? (
+              <EmptyState message="No students have started this case study yet." />
+            ) : (
+              <TableContainer component={Paper} className={styles.sectionCard}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Student</TableCell>
+                      <TableCell>Notes</TableCell>
+                      <TableCell>Last updated</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {reviewInstances.map((row) => (
+                      <TableRow key={row._id} hover>
+                        <TableCell sx={{ fontWeight: 600 }}>{row.studentName}</TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={row.noteCount}
+                            sx={{ backgroundColor: '#FFFBF0', color: '#003D82', fontWeight: 700 }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ color: '#595959' }}>
+                          {row.updatedAt ? new Date(row.updatedAt).toLocaleString() : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<OpenInNew />}
+                            onClick={() => handleOpenStudentNotes(row)}
+                          >
+                            Open notes
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>

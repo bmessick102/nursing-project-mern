@@ -181,6 +181,7 @@ const SkinIntegrityAssessment: React.FC<Props> = ({ patient, onSaved }) => {
             value={turgor}
             onChange={setTurgor}
             options={['Elastic', 'Tenting present', 'Decreased']}
+            freeSolo
           />
         </Grid>
         <Grid item xs={12} sm={6}>

@@ -22,12 +22,15 @@ import { INSERT_SECTIONS } from 'utils/noteAutofill'
 import { useAppStore } from 'store/useAppStore'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
+import { useAuth } from 'contexts/AuthContext'
 import EditMenu from 'components/edit/EditMenu'
 import AddendumDialog from 'components/edit/AddendumDialog'
 import MarkInErrorDialog from 'components/edit/MarkInErrorDialog'
 import ModificationHistory from 'components/edit/ModificationHistory'
 import InErrorBanner, { inErrorRowSx } from 'components/edit/InErrorBanner'
 import AddendaList from 'components/edit/AddendaList'
+import InstructorCommentList from 'components/edit/InstructorCommentList'
+import InstructorCommentDialog from 'components/edit/InstructorCommentDialog'
 import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
 import styles from 'styles/TabContent.module.css'
@@ -42,6 +45,7 @@ const NotesTab: React.FC = () => {
   const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
   const { username } = useCurrentUser()
+  const { account } = useAuth()
   const [selectedNote, setSelectedNote] = useState<NursingNote | null>(null)
   const [mode, setMode] = useState<'view' | 'write' | 'edit'>('view')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -54,12 +58,14 @@ const NotesTab: React.FC = () => {
   const [addendumFor, setAddendumFor] = useState<NursingNote | null>(null)
   const [markInErrorFor, setMarkInErrorFor] = useState<NursingNote | null>(null)
   const [historyFor, setHistoryFor] = useState<NursingNote | null>(null)
+  const [commentFor, setCommentFor] = useState<NursingNote | null>(null)
 
   const {
     addNote,
     editResource,
     addAddendumToResource,
     markResourceInError,
+    adminAddNoteComment,
     loading,
   } = useChartingApi()
 
@@ -80,6 +86,19 @@ const NotesTab: React.FC = () => {
   }
 
   const nursingNotes = patient.nursingNotes || []
+  const instructorNotes = patient.instructorNotes || []
+
+  // Viewer context for case-study patients (template -> per-student instance model).
+  // An instance carries ownerAccountId (the student) and templateId. A student's instance
+  // also carries a derived read-only `instructorNotes` (the instructor's live notes).
+  const role = account?.role
+  const isInstructorRole = role === 'administrator' || role === 'admin' || role === 'instructor'
+  const isInstance = Boolean(patient.ownerAccountId || patient.templateId)
+  const isOwnerStudent = isInstance && account?._id === patient.ownerAccountId
+  const instructorReview = isInstance && isInstructorRole && !isOwnerStudent
+  const studentTwoPane = isInstance && !isInstructorRole
+  const canAuthorNotes = !instructorReview // instructors review student notes, they don't author them
+
   const noteTypes = ['Progress Note', 'Assessment', 'Procedure Note', 'Incident Report']
   const filters = ['All Notes', 'Progress', 'Procedures', 'Assessment', 'Incomplete']
 
@@ -198,14 +217,71 @@ const NotesTab: React.FC = () => {
     }
   }
 
+  const handleAddComment = async (content: string) => {
+    if (!commentFor) return
+    try {
+      const updated = await adminAddNoteComment(patient._id, commentFor._id, content)
+      setSelectedPatient(updated)
+      const refreshed = updated.nursingNotes.find((n) => n._id === commentFor._id)
+      if (refreshed) setSelectedNote(refreshed)
+      setCommentFor(null)
+    } catch (err) {
+      console.error('Failed to add instructor comment', err)
+    }
+  }
+
   return (
     <Box data-phi="true">
-      <TabHeader title="Nursing Notes" actionLabel="Add Note" onAction={startWrite} />
+      <TabHeader
+        title={instructorReview ? 'Student Notes — Instructor Review' : 'Nursing Notes'}
+        actionLabel={canAuthorNotes ? 'Add Note' : undefined}
+        onAction={canAuthorNotes ? startWrite : undefined}
+      />
       <Grid container spacing={2} className={styles.tabContainer}>
-        <Grid item xs={12} md={4}>
+        {studentTwoPane && (
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, height: '100%' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#003D82' }}>
+                Instructor Notes
+              </Typography>
+              {instructorNotes.length === 0 ? (
+                <Typography variant="body2" sx={{ color: '#6B6B6B' }}>
+                  No instructor notes yet.
+                </Typography>
+              ) : (
+                <Box sx={{ maxHeight: 560, overflow: 'auto' }}>
+                  <Stack spacing={1}>
+                    {[...instructorNotes].reverse().map((note) => (
+                      <Paper
+                        key={note._id}
+                        variant="outlined"
+                        sx={{ p: 1.5, borderLeft: '4px solid #003D82', backgroundColor: '#f5f8fc' }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#003D82' }}>
+                          {note.type}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                          {note.author}
+                          {note.authorRole ? ` • ${note.authorRole}` : ''}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6B6B6B', display: 'block', mb: 0.5 }}>
+                          {note.date} • {note.time}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#333', whiteSpace: 'pre-wrap' }}>
+                          {note.content}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+        )}
+        <Grid item xs={12} md={studentTwoPane ? 3 : 4}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-              Filter
+              {studentTwoPane ? 'My Notes' : instructorReview ? 'Student Notes' : 'Filter'}
             </Typography>
 
             <Tabs
@@ -270,7 +346,14 @@ const NotesTab: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={studentTwoPane ? 5 : 8}>
+          {mode === 'view' && !activeNote && instructorReview && (
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="body2" sx={{ color: '#6B6B6B' }}>
+                This student hasn&apos;t written any notes yet.
+              </Typography>
+            </Paper>
+          )}
           {(mode === 'view' || mode === 'edit') && activeNote && mode === 'view' && (
             <Paper sx={{ p: 2 }}>
               <InErrorBanner entry={activeNote} />
@@ -310,14 +393,26 @@ const NotesTab: React.FC = () => {
                         ✓ Signed
                       </Typography>
                     )}
-                    <EditMenu
-                      entry={activeNote}
-                      signed={activeNote.signed}
-                      onEdit={() => startEdit(activeNote)}
-                      onAddendum={() => setAddendumFor(activeNote)}
-                      onMarkInError={() => setMarkInErrorFor(activeNote)}
-                      onViewHistory={() => setHistoryFor(activeNote)}
-                    />
+                    {canAuthorNotes && (
+                      <EditMenu
+                        entry={activeNote}
+                        signed={activeNote.signed}
+                        onEdit={() => startEdit(activeNote)}
+                        onAddendum={() => setAddendumFor(activeNote)}
+                        onMarkInError={() => setMarkInErrorFor(activeNote)}
+                        onViewHistory={() => setHistoryFor(activeNote)}
+                      />
+                    )}
+                    {instructorReview && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => setCommentFor(activeNote)}
+                        sx={{ backgroundColor: '#003D82', textTransform: 'none' }}
+                      >
+                        Add comment
+                      </Button>
+                    )}
                   </Stack>
                 </Box>
               </Box>
@@ -328,10 +423,11 @@ const NotesTab: React.FC = () => {
                 {activeNote.content}
               </Typography>
               <AddendaList addenda={activeNote.addenda} />
+              <InstructorCommentList comments={activeNote.instructorComments} />
             </Paper>
           )}
 
-          {(mode === 'write' || mode === 'edit') && (
+          {canAuthorNotes && (mode === 'write' || mode === 'edit') && (
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6" sx={{ color: '#003D82', fontWeight: 600, mb: 2 }}>
                 {mode === 'edit' ? 'Edit Note' : 'New Note'}
@@ -342,6 +438,7 @@ const NotesTab: React.FC = () => {
                   value={form.type}
                   onChange={(v) => setForm({ ...form, type: v })}
                   options={noteTypes}
+                  freeSolo
                 />
 
                 <Box>
@@ -445,6 +542,12 @@ const NotesTab: React.FC = () => {
         onClose={() => setHistoryFor(null)}
         entry={historyFor}
         entityLabel="note"
+      />
+      <InstructorCommentDialog
+        open={commentFor !== null}
+        onClose={() => setCommentFor(null)}
+        onSubmit={handleAddComment}
+        loading={loading}
       />
     </Box>
   )

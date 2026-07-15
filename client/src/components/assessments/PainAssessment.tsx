@@ -164,6 +164,7 @@ const PainAssessment: React.FC<Props> = ({ patient, onSaved }) => {
             value={severity}
             onChange={setSeverity}
             options={['None', 'Mild', 'Moderate', 'Severe', 'Excruciating']}
+            freeSolo
           />
         </Grid>
         <Grid item xs={12} sm={6}>

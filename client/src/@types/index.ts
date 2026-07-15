@@ -105,6 +105,14 @@ export interface Encounter extends Auditable {
   plan?: string
 }
 
+export interface InstructorComment {
+  _id: string
+  timestamp: string
+  author: string
+  authorRole: string
+  content: string
+}
+
 export interface NursingNote extends Auditable {
   _id: string
   date: string
@@ -114,6 +122,7 @@ export interface NursingNote extends Auditable {
   authorRole: string
   content: string
   signed: boolean
+  instructorComments?: InstructorComment[]
 }
 
 export interface MARAdministration extends Auditable {
@@ -194,6 +203,12 @@ export interface BradenScore extends Auditable {
 export interface Patient {
   _id: string
   courseId: string
+  isCaseStudy?: boolean
+  availableFrom?: string
+  availableUntil?: string
+  ownerAccountId?: string
+  templateId?: string
+  instructorNotes?: NursingNote[] // derived/read-only: a live copy of the case-study template's nursingNotes, injected by the API for a student's instance. Not persisted.
   name: string
   age: number
   gender: string

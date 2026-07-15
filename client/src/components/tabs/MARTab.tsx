@@ -428,6 +428,7 @@ const MARTab: React.FC = () => {
                 value={form.route}
                 onChange={(v) => setForm((prev) => ({ ...prev, route: v }))}
                 options={ROUTES}
+                freeSolo
               />
             </Grid>
             <Grid item xs={12}>
@@ -436,6 +437,7 @@ const MARTab: React.FC = () => {
                 value={form.frequency}
                 onChange={(v) => setForm((prev) => ({ ...prev, frequency: v }))}
                 options={FREQUENCIES}
+                freeSolo
               />
             </Grid>
             <Grid item xs={12}>
