@@ -1,6 +1,7 @@
 import express from 'express'
 import checkBearerToken from '../middlewares/check-bearer-token'
 import checkAdmin from '../middlewares/check-admin'
+import checkInstructorOrAdmin from '../middlewares/check-instructor-or-admin'
 import errorHandler from '../middlewares/error-handler'
 import createCourse from '../controllers/admin/createCourse'
 import updateCourse from '../controllers/admin/updateCourse'
@@ -12,6 +13,7 @@ import createPatient from '../controllers/admin/createPatient'
 import updatePatient from '../controllers/admin/updatePatient'
 import listInstances from '../controllers/admin/listInstances'
 import addNoteComment from '../controllers/admin/addNoteComment'
+import gradeInstance from '../controllers/admin/gradeInstance'
 
 const router = express.Router()
 const adminGuard = [checkBearerToken, checkAdmin]
@@ -26,6 +28,7 @@ router.post('/patients', adminGuard, createPatient, errorHandler)
 router.patch('/patients/:id', adminGuard, updatePatient, errorHandler)
 router.get('/patients/:templateId/instances', adminGuard, listInstances, errorHandler)
 router.post('/patients/:id/notes/:noteId/comments', adminGuard, addNoteComment, errorHandler)
+router.patch('/patients/:id/grade', [checkBearerToken, checkInstructorOrAdmin], gradeInstance, errorHandler)
 
 // Accounts
 router.get('/accounts', adminGuard, listAccounts, errorHandler)

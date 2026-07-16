@@ -17,6 +17,7 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
+  Alert,
 } from '@mui/material'
 import type { NursingNote, NoteTemplate } from '@types'
 import SearchableSelect from 'components/common/SearchableSelect'
@@ -32,6 +33,7 @@ import ModificationHistory from 'components/edit/ModificationHistory'
 import InErrorBanner, { inErrorRowSx } from 'components/edit/InErrorBanner'
 import AddendaList from 'components/edit/AddendaList'
 import InstructorCommentList from 'components/edit/InstructorCommentList'
+import PeerAssessmentList from 'components/edit/PeerAssessmentList'
 import InstructorCommentDialog from 'components/edit/InstructorCommentDialog'
 import TabHeader from 'components/common/TabHeader'
 import EmptyState from 'components/common/EmptyState'
@@ -311,6 +313,22 @@ const NotesTab: React.FC = () => {
         actionLabel={canAuthorNotes ? 'Add Encounter' : undefined}
         onAction={canAuthorNotes ? startWrite : undefined}
       />
+      {patient.grade && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+            Grade: {patient.grade.score}/{patient.grade.maxScore} (
+            {Math.round((patient.grade.score / patient.grade.maxScore) * 100)}%)
+          </Typography>
+          {patient.grade.feedback && (
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}>
+              {patient.grade.feedback}
+            </Typography>
+          )}
+          <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#6B6B6B' }}>
+            Graded by {patient.grade.gradedBy}
+          </Typography>
+        </Alert>
+      )}
       <Grid container spacing={2} className={styles.tabContainer}>
         {studentTwoPane && (
           <Grid item xs={12} md={4}>
@@ -525,6 +543,7 @@ const NotesTab: React.FC = () => {
               )}
               <AddendaList addenda={activeNote.addenda} />
               <InstructorCommentList comments={activeNote.instructorComments} />
+              <PeerAssessmentList assessments={activeNote.peerAssessments} />
             </Paper>
           )}
 

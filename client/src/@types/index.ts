@@ -127,6 +127,27 @@ export interface InstructorComment {
   content: string
 }
 
+export interface PeerAssessment {
+  _id: string
+  peerReviewId: string
+  correct: boolean
+  comment: string
+  createdAt: string
+}
+
+export interface PeerReview {
+  _id: string
+  courseId: string
+  templateId: string
+  reviewerAccountId: string
+  revieweeInstanceId: string
+  revieweeAccountId: string
+  status: 'assigned' | 'submitted'
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface NursingNote extends Auditable {
   _id: string
   date: string
@@ -144,6 +165,7 @@ export interface NursingNote extends Auditable {
     plan?: string
   }
   instructorComments?: InstructorComment[]
+  peerAssessments?: PeerAssessment[]
 }
 
 export interface MARAdministration extends Auditable {
@@ -256,5 +278,12 @@ export interface Patient {
     anticipatedDate: string
     condition: string
     instructions: string[]
+  }
+  grade?: {
+    score: number
+    maxScore: number
+    feedback?: string
+    gradedBy: string
+    gradedAt: string
   }
 }

@@ -14,6 +14,7 @@ import type {
   MAREntry,
   Order,
   NoteTemplate,
+  PeerReview,
 } from '@types'
 
 type CaseStudyInstancesResponse = {
@@ -744,6 +745,125 @@ export const useChartingApi = () => {
     [reportError],
   )
 
+  // --- Grading + peer review ---
+
+  const adminGradeInstance = useCallback(
+    async (id: string, grade: { score: number; maxScore: number; feedback?: string }) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.patch(`/admin/patients/${id}/grade`, grade)
+        return data.data as Patient
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminCreatePeerReview = useCallback(
+    async (payload: { reviewerAccountId: string; revieweeInstanceId: string }) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post('/peer-reviews', payload)
+        return data.data as PeerReview
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const adminListPeerReviews = useCallback(
+    async (templateId: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.get('/peer-reviews', { params: { templateId } })
+        return data.data as {
+          templateId: string
+          reviews: Array<{
+            _id: string
+            reviewerName: string
+            revieweeName: string
+            status: string
+            createdAt: string
+          }>
+        }
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const listMyPeerReviews = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data } = await axios.get('/peer-reviews/mine')
+      return data.data as Array<{ _id: string; status: string; createdAt: string }>
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || err.message
+      reportError(errorMsg)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [reportError])
+
+  const getPeerReviewChart = useCallback(
+    async (id: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.get(`/peer-reviews/${id}/chart`)
+        return data.data as { peerReviewId: string; status: string; patient: Patient }
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const submitPeerAssessment = useCallback(
+    async (id: string, noteId: string, body: { correct: boolean; comment: string }) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post(
+          `/peer-reviews/${id}/notes/${noteId}/assessment`,
+          body,
+        )
+        return data.data
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
   return {
     loading,
     error,
@@ -781,5 +901,11 @@ export const useChartingApi = () => {
     createNoteTemplate,
     updateNoteTemplate,
     deleteNoteTemplate,
+    adminGradeInstance,
+    adminCreatePeerReview,
+    adminListPeerReviews,
+    listMyPeerReviews,
+    getPeerReviewChart,
+    submitPeerAssessment,
   }
 }

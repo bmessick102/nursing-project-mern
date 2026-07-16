@@ -4,6 +4,7 @@ import courseRoutes from './courses'
 import patientRoutes from './patients'
 import adminRoutes from './admin'
 import templateRoutes from './templates'
+import peerReviewRoutes from './peerReviews'
 
 /**
  * Mounts the health check and all API routers. Kept separate from server startup so
@@ -19,6 +20,7 @@ export const registerRoutes = (app: Express) => {
   app.use('/patients', patientRoutes)
   app.use('/admin', adminRoutes)
   app.use('/note-templates', templateRoutes)
+  app.use('/peer-reviews', peerReviewRoutes)
 }
 
 export default registerRoutes

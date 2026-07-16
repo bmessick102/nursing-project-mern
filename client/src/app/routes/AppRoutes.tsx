@@ -21,6 +21,8 @@ const CourseSelectionPage = lazy(() =>
 )
 const PatientListPage = lazy(() => import('pages/PatientListPage'))
 const AdminDashboardPage = lazy(() => import('pages/AdminDashboardPage'))
+const PeerReviewListPage = lazy(() => import('pages/PeerReviewListPage'))
+const PeerReviewChartPage = lazy(() => import('pages/PeerReviewChartPage'))
 const SummaryTab = lazy(() => import('components/tabs/SummaryTab'))
 const ChartReviewTab = lazy(() => import('components/tabs/ChartReviewTab'))
 const ResultsTab = lazy(() => import('components/tabs/ResultsTab'))
@@ -107,6 +109,8 @@ const AppRoutes: React.FC = () => {
         <Route element={<RequireAuth requireCourse={true} />}>
           <Route element={<AppShell />}>
             <Route path="/patients" element={S(PatientListPage)} />
+            <Route path="/peer-reviews" element={S(PeerReviewListPage)} />
+            <Route path="/peer-review/:id" element={S(PeerReviewChartPage)} />
 
             <Route path="/patient/:patientId" element={<PatientLayout />}>
               <Route index element={<Navigate to="summary" replace />} />

@@ -17,7 +17,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../../data')
 const DB_PATH = process.env.DATABASE_PATH || path.join(DATA_DIR, 'app.db')
 
 // Collections that get a table eagerly + a one-time legacy-JSON import on init.
-const KNOWN_COLLECTIONS = ['accounts', 'courses', 'patients', 'inviteCodes', 'noteTemplates']
+const KNOWN_COLLECTIONS = ['accounts', 'courses', 'patients', 'inviteCodes', 'noteTemplates', 'peerReviews']
 
 let db: Database.Database | null = null
 

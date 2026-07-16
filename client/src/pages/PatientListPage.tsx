@@ -91,13 +91,22 @@ const PatientListPage: React.FC = () => {
                 {selectedCourse?.name}
               </Typography>
             </Box>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/course-select')}
-              className={styles.backButton}
-            >
-              Back to Courses
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/peer-reviews')}
+                className={styles.backButton}
+              >
+                Peer Reviews
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/course-select')}
+                className={styles.backButton}
+              >
+                Back to Courses
+              </Button>
+            </Stack>
           </Box>
         </Container>
       </Box>

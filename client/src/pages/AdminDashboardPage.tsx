@@ -35,6 +35,7 @@ import RegenerateCodeDialog from 'components/admin/RegenerateCodeDialog'
 import CreateAccountDialog from 'components/admin/CreateAccountDialog'
 import EditAccountDialog from 'components/admin/EditAccountDialog'
 import NoteTemplateDialog from 'components/admin/NoteTemplateDialog'
+import GradeDialog from 'components/admin/GradeDialog'
 import { useAuth } from 'contexts/AuthContext'
 import { useAppStore } from 'store/useAppStore'
 import styles from 'styles/AdminDashboardPage.module.css'
@@ -59,6 +60,14 @@ interface StudentInstanceRow {
   updatedAt: string
 }
 
+interface PeerReviewRow {
+  _id: string
+  reviewerName: string
+  revieweeName: string
+  status: string
+  createdAt: string
+}
+
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const {
@@ -71,6 +80,9 @@ const AdminDashboardPage: React.FC = () => {
     adminCreateAccount,
     adminUpdateAccount,
     adminListInstances,
+    adminGradeInstance,
+    adminCreatePeerReview,
+    adminListPeerReviews,
     listNoteTemplates,
     createNoteTemplate,
     updateNoteTemplate,
@@ -80,7 +92,7 @@ const AdminDashboardPage: React.FC = () => {
   const { displayName, username } = useCurrentUser()
   const { account: callerAccount, logout } = useAuth()
   const { setSelectedCourse, setSelectedPatient } = useAppStore()
-  const { notifySuccess } = useSnackbar()
+  const { notifySuccess, notifyError } = useSnackbar()
 
   const handleLogout = () => {
     logout()
@@ -104,6 +116,10 @@ const AdminDashboardPage: React.FC = () => {
   const [reviewCaseStudies, setReviewCaseStudies] = useState<Patient[]>([])
   const [reviewCaseStudyId, setReviewCaseStudyId] = useState('')
   const [reviewInstances, setReviewInstances] = useState<StudentInstanceRow[]>([])
+  const [peerReviews, setPeerReviews] = useState<PeerReviewRow[]>([])
+  const [prReviewer, setPrReviewer] = useState('')
+  const [prReviewee, setPrReviewee] = useState('')
+  const [gradingRow, setGradingRow] = useState<StudentInstanceRow | null>(null)
   const [templates, setTemplates] = useState<NoteTemplate[]>([])
   const [templateCourseId, setTemplateCourseId] = useState<string>('')
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
@@ -310,6 +326,45 @@ const AdminDashboardPage: React.FC = () => {
     [adminListInstances],
   )
 
+  const loadPeerReviews = useCallback(
+    async (templateId: string) => {
+      if (!templateId) {
+        setPeerReviews([])
+        return
+      }
+      try {
+        const r = await adminListPeerReviews(templateId)
+        setPeerReviews((r.reviews as PeerReviewRow[]) || [])
+      } catch (err) {
+        console.error('Failed to load peer reviews', err)
+      }
+    },
+    [adminListPeerReviews],
+  )
+
+  useEffect(() => {
+    if (reviewCaseStudyId) loadPeerReviews(reviewCaseStudyId)
+    else setPeerReviews([])
+  }, [reviewCaseStudyId, loadPeerReviews])
+
+  const handleAssignPeerReview = async () => {
+    if (!prReviewer || !prReviewee) return
+    const revieweeRow = reviewInstances.find((r) => r._id === prReviewee)
+    if (revieweeRow && revieweeRow.ownerAccountId === prReviewer) {
+      notifyError('A student cannot be assigned to review their own work.')
+      return
+    }
+    try {
+      await adminCreatePeerReview({ reviewerAccountId: prReviewer, revieweeInstanceId: prReviewee })
+      notifySuccess('Peer review assigned')
+      setPrReviewer('')
+      setPrReviewee('')
+      loadPeerReviews(reviewCaseStudyId)
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
+  }
+
   const handleReviewCourseChange = (courseId: string) => {
     setReviewCourseId(courseId)
     setReviewCaseStudyId('')
@@ -320,6 +375,18 @@ const AdminDashboardPage: React.FC = () => {
   const handleReviewCaseStudyChange = (id: string) => {
     setReviewCaseStudyId(id)
     loadReviewInstances(id)
+  }
+
+  const handleGradeSubmit = async (grade: { score: number; maxScore: number; feedback: string }) => {
+    if (!gradingRow) return
+    try {
+      await adminGradeInstance(gradingRow._id, grade)
+      notifySuccess('Grade saved for ' + gradingRow.studentName)
+      setGradingRow(null)
+      loadReviewInstances(reviewCaseStudyId)
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
   }
 
   const handleOpenStudentNotes = (row: StudentInstanceRow) => {
@@ -749,20 +816,108 @@ const AdminDashboardPage: React.FC = () => {
                           {row.updatedAt ? new Date(row.updatedAt).toLocaleString() : '—'}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<OpenInNew />}
-                            onClick={() => handleOpenStudentNotes(row)}
-                          >
-                            Open notes
-                          </Button>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<OpenInNew />}
+                              onClick={() => handleOpenStudentNotes(row)}
+                            >
+                              Open notes
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              onClick={() => setGradingRow(row)}
+                              sx={{ backgroundColor: '#003D82' }}
+                            >
+                              Grade
+                            </Button>
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
+            )}
+
+            {reviewInstances.length > 0 && (
+              <Box sx={{ mt: 4 }}>
+                <Typography
+                  component="h3"
+                  variant="subtitle1"
+                  sx={{ color: '#003D82', fontWeight: 700, mb: 2 }}
+                >
+                  Assign Peer Review
+                </Typography>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'flex-end' }}>
+                  <Box sx={{ minWidth: 260 }}>
+                    <SearchableSelect
+                      label="Reviewer"
+                      placeholder="Select a student…"
+                      value={prReviewer}
+                      onChange={setPrReviewer}
+                      options={reviewInstances.map((r) => ({ value: r.ownerAccountId, label: r.studentName }))}
+                    />
+                  </Box>
+                  <Box sx={{ minWidth: 260 }}>
+                    <SearchableSelect
+                      label="Reviews"
+                      placeholder="Select student work…"
+                      value={prReviewee}
+                      onChange={setPrReviewee}
+                      options={reviewInstances.map((r) => ({ value: r._id, label: r.studentName }))}
+                    />
+                  </Box>
+                  <Button
+                    variant="contained"
+                    disabled={!prReviewer || !prReviewee}
+                    onClick={handleAssignPeerReview}
+                    sx={{ backgroundColor: '#003D82' }}
+                  >
+                    Assign
+                  </Button>
+                </Stack>
+
+                {peerReviews.length > 0 && (
+                  <TableContainer component={Paper} className={styles.sectionCard} sx={{ mt: 3 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Reviewer</TableCell>
+                          <TableCell>Reviews</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Assigned</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {peerReviews.map((pr) => (
+                          <TableRow key={pr._id} hover>
+                            <TableCell sx={{ fontWeight: 600 }}>{pr.reviewerName}</TableCell>
+                            <TableCell>{pr.revieweeName}</TableCell>
+                            <TableCell>
+                              <Chip
+                                size="small"
+                                label={pr.status}
+                                sx={{
+                                  backgroundColor: '#FFFBF0',
+                                  color: '#003D82',
+                                  fontWeight: 700,
+                                  textTransform: 'capitalize',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ color: '#595959' }}>
+                              {pr.createdAt ? new Date(pr.createdAt).toLocaleDateString() : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Box>
             )}
           </Box>
         )}
@@ -923,6 +1078,14 @@ const AdminDashboardPage: React.FC = () => {
           setEditingTemplate(null)
         }}
         onSubmit={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
+      />
+
+      <GradeDialog
+        open={gradingRow !== null}
+        loading={loading}
+        studentName={gradingRow?.studentName}
+        onClose={() => setGradingRow(null)}
+        onSubmit={handleGradeSubmit}
       />
 
       <Snackbar
