@@ -22,8 +22,8 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material'
-import { Refresh, ContentCopy, Edit as EditIcon, OpenInNew } from '@mui/icons-material'
-import type { Course, Patient } from '@types'
+import { Refresh, ContentCopy, Edit as EditIcon, OpenInNew, Delete as DeleteIcon } from '@mui/icons-material'
+import type { Course, Patient, NoteTemplate } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
 import { useSnackbar } from 'contexts/SnackbarContext'
@@ -34,6 +34,7 @@ import CreatePatientDialog from 'components/admin/CreatePatientDialog'
 import RegenerateCodeDialog from 'components/admin/RegenerateCodeDialog'
 import CreateAccountDialog from 'components/admin/CreateAccountDialog'
 import EditAccountDialog from 'components/admin/EditAccountDialog'
+import NoteTemplateDialog from 'components/admin/NoteTemplateDialog'
 import { useAuth } from 'contexts/AuthContext'
 import { useAppStore } from 'store/useAppStore'
 import styles from 'styles/AdminDashboardPage.module.css'
@@ -70,6 +71,10 @@ const AdminDashboardPage: React.FC = () => {
     adminCreateAccount,
     adminUpdateAccount,
     adminListInstances,
+    listNoteTemplates,
+    createNoteTemplate,
+    updateNoteTemplate,
+    deleteNoteTemplate,
     loading,
   } = useChartingApi()
   const { displayName, username } = useCurrentUser()
@@ -99,16 +104,21 @@ const AdminDashboardPage: React.FC = () => {
   const [reviewCaseStudies, setReviewCaseStudies] = useState<Patient[]>([])
   const [reviewCaseStudyId, setReviewCaseStudyId] = useState('')
   const [reviewInstances, setReviewInstances] = useState<StudentInstanceRow[]>([])
+  const [templates, setTemplates] = useState<NoteTemplate[]>([])
+  const [templateCourseId, setTemplateCourseId] = useState<string>('')
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null)
 
   const loadCourses = useCallback(async () => {
     try {
       const data = await fetchCourses()
       setCourses(data)
       if (!filterCourseId && data[0]) setFilterCourseId(data[0]._id)
+      if (!templateCourseId && data[0]) setTemplateCourseId(data[0]._id)
     } catch (err) {
       console.error('Failed to load courses', err)
     }
-  }, [fetchCourses, filterCourseId])
+  }, [fetchCourses, filterCourseId, templateCourseId])
 
   const loadPatients = useCallback(
     async (courseId: string) => {
@@ -146,6 +156,22 @@ const AdminDashboardPage: React.FC = () => {
   useEffect(() => {
     loadAccounts()
   }, [loadAccounts])
+
+  const loadTemplates = useCallback(
+    async (courseId: string) => {
+      try {
+        const data = await listNoteTemplates(courseId || undefined)
+        setTemplates(data)
+      } catch (err) {
+        console.error('Failed to load note templates', err)
+      }
+    },
+    [listNoteTemplates],
+  )
+
+  useEffect(() => {
+    loadTemplates(templateCourseId)
+  }, [templateCourseId, loadTemplates])
 
   const handleCreateCourse = async (payload: {
     name: string
@@ -204,6 +230,42 @@ const AdminDashboardPage: React.FC = () => {
       notifySuccess(`Account "${editingAccount.username}" updated.`)
       setEditingAccount(null)
       loadAccounts()
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
+  }
+
+  const handleCreateTemplate = async (payload: any) => {
+    try {
+      await createNoteTemplate(payload)
+      notifySuccess(`Template "${payload.name}" created.`)
+      setTemplateDialogOpen(false)
+      setEditingTemplate(null)
+      loadTemplates(templateCourseId)
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
+  }
+
+  const handleUpdateTemplate = async (payload: any) => {
+    if (!editingTemplate) return
+    try {
+      await updateNoteTemplate(editingTemplate._id, payload)
+      notifySuccess(`Template "${payload.name}" updated.`)
+      setTemplateDialogOpen(false)
+      setEditingTemplate(null)
+      loadTemplates(templateCourseId)
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
+  }
+
+  const handleDeleteTemplate = async (t: NoteTemplate) => {
+    if (!window.confirm(`Delete template "${t.name}"? This cannot be undone.`)) return
+    try {
+      await deleteNoteTemplate(t._id)
+      notifySuccess(`Template "${t.name}" deleted.`)
+      loadTemplates(templateCourseId)
     } catch (err) {
       /* surfaced via snackbar */
     }
@@ -321,6 +383,7 @@ const AdminDashboardPage: React.FC = () => {
             <Tab label={`Patients (${patients.length})`} />
             <Tab label={`Accounts (${accounts.length})`} />
             <Tab label="Case Study Review" />
+            <Tab label="Note Templates" />
           </Tabs>
         </Container>
       </Box>
@@ -703,6 +766,115 @@ const AdminDashboardPage: React.FC = () => {
             )}
           </Box>
         )}
+
+        {/* NOTE TEMPLATES */}
+        {tab === 4 && (
+          <Box>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mb: 2 }}
+            >
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Typography component="h2" variant="h6" sx={{ color: '#003D82', fontWeight: 700 }}>
+                  Note Templates
+                </Typography>
+                <Box sx={{ minWidth: 240 }}>
+                  <SearchableSelect
+                    label="Filter by Course"
+                    placeholder="Search courses…"
+                    value={templateCourseId}
+                    onChange={setTemplateCourseId}
+                    options={courses.map((c) => ({ value: c._id, label: `${c.name} (${c.code})` }))}
+                  />
+                </Box>
+              </Stack>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setEditingTemplate(null)
+                  setTemplateDialogOpen(true)
+                }}
+                sx={{ backgroundColor: '#003D82' }}
+              >
+                New Template
+              </Button>
+            </Stack>
+
+            {templates.length === 0 ? (
+              <EmptyState
+                message="No note templates yet."
+                actionHint='Use "New Template" to create one. Global templates apply to all courses.'
+              />
+            ) : (
+              <TableContainer component={Paper} className={styles.sectionCard}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Scope</TableCell>
+                      <TableCell>Format</TableCell>
+                      <TableCell>Default role</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {templates.map((t) => (
+                      <TableRow key={t._id} hover>
+                        <TableCell sx={{ fontWeight: 600 }}>{t.name}</TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={
+                              t.courseId
+                                ? courses.find((c) => c._id === t.courseId)?.name || 'Course'
+                                : 'Global'
+                            }
+                            sx={{
+                              backgroundColor: t.courseId ? '#F4F4F4' : '#FFFBF0',
+                              color: '#003D82',
+                              fontWeight: 700,
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ textTransform: 'uppercase', fontSize: 12, color: '#595959' }}>
+                          {t.format === 'soap' ? 'SOAP' : 'Free text'}
+                        </TableCell>
+                        <TableCell sx={{ color: '#595959' }}>{t.defaultRole || '—'}</TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <Tooltip title="Edit template">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setEditingTemplate(t)
+                                  setTemplateDialogOpen(true)
+                                }}
+                                aria-label={`edit template ${t.name}`}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete template">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteTemplate(t)}
+                                aria-label={`delete template ${t.name}`}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+        )}
       </Container>
 
       <CreateCourseDialog
@@ -740,6 +912,17 @@ const AdminDashboardPage: React.FC = () => {
         isSelf={editingAccount?._id === callerAccount?._id}
         onClose={() => setEditingAccount(null)}
         onSubmit={handleUpdateAccount}
+      />
+      <NoteTemplateDialog
+        open={templateDialogOpen}
+        loading={loading}
+        courses={courses}
+        initial={editingTemplate}
+        onClose={() => {
+          setTemplateDialogOpen(false)
+          setEditingTemplate(null)
+        }}
+        onSubmit={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
       />
 
       <Snackbar

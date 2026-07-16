@@ -71,17 +71,32 @@ const VitalSlider: React.FC<{
       {label}: {value}
       {unit}
     </Typography>
-    <Slider
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(_, val) => onChange(val as number)}
-      valueLabelDisplay="auto"
-      aria-label={`${label}, ${min} to ${max}`}
-      aria-valuetext={`${value}${unit}`}
-      sx={{ color: sliderColor(getVitalSeverity(metric, value)) }}
-    />
+    <Stack direction="row" alignItems="center" spacing={2}>
+      <Slider
+        min={min}
+        max={max}
+        step={step}
+        value={Math.min(max, Math.max(min, value))}
+        onChange={(_, val) => onChange(val as number)}
+        valueLabelDisplay="auto"
+        aria-label={`${label}, ${min} to ${max}`}
+        aria-valuetext={`${value}${unit}`}
+        sx={{ color: sliderColor(getVitalSeverity(metric, value)) }}
+      />
+      <TextField
+        type="number"
+        size="small"
+        value={value}
+        onChange={(e) => {
+          const raw = e.target.value
+          const n = raw === '' ? min : Number(raw)
+          if (!Number.isNaN(n)) onChange(n)
+        }}
+        inputProps={{ inputMode: 'numeric', step }}
+        aria-label={`${label} value`}
+        sx={{ width: 88, flexShrink: 0 }}
+      />
+    </Stack>
   </>
 )
 
@@ -393,16 +408,31 @@ const FlowsheetsTab: React.FC = () => {
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                 Pain Score: {form.painScore}
               </Typography>
-              <Slider
-                min={0}
-                max={10}
-                step={1}
-                value={form.painScore}
-                onChange={(_, val) => setForm({ ...form, painScore: val as number })}
-                marks
-                aria-label="Pain score, 0 to 10"
-                aria-valuetext={`${form.painScore} out of 10`}
-              />
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Slider
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={Math.min(10, Math.max(0, form.painScore))}
+                  onChange={(_, val) => setForm({ ...form, painScore: val as number })}
+                  marks
+                  aria-label="Pain score, 0 to 10"
+                  aria-valuetext={`${form.painScore} out of 10`}
+                />
+                <TextField
+                  type="number"
+                  size="small"
+                  value={form.painScore}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    const n = raw === '' ? 0 : Number(raw)
+                    if (!Number.isNaN(n)) setForm({ ...form, painScore: n })
+                  }}
+                  inputProps={{ inputMode: 'numeric', step: 1 }}
+                  aria-label="Pain score value"
+                  sx={{ width: 88, flexShrink: 0 }}
+                />
+              </Stack>
             </Grid>
 
             {editingId && (

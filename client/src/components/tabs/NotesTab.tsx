@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from 'react'
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react'
 import {
   Paper,
   Typography,
@@ -15,8 +15,10 @@ import {
   Tab,
   CircularProgress,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material'
-import type { NursingNote } from '@types'
+import type { NursingNote, NoteTemplate } from '@types'
 import SearchableSelect from 'components/common/SearchableSelect'
 import { INSERT_SECTIONS } from 'utils/noteAutofill'
 import { useAppStore } from 'store/useAppStore'
@@ -39,11 +41,28 @@ const blankForm = () => ({
   type: 'Progress Note',
   content: '',
   signed: false,
+  authorRole: 'RN',
+  format: 'freetext' as 'freetext' | 'soap',
+  soap: { subjective: '', objective: '', assessment: '', plan: '' },
 })
+
+const AUTHOR_ROLES = [
+  'RN',
+  'LPN',
+  'CNA',
+  'Physician (MD)',
+  'Nurse Practitioner (NP)',
+  'Physician Assistant (PA)',
+  'Respiratory Therapist (RT)',
+  'Physical Therapist (PT)',
+  'Charge Nurse',
+  'Provider',
+]
 
 const NotesTab: React.FC = () => {
   const patient = useAppStore((s) => s.selectedPatient)
   const setSelectedPatient = useAppStore((s) => s.setSelectedPatient)
+  const selectedCourse = useAppStore((s) => s.selectedCourse)
   const { username } = useCurrentUser()
   const { account } = useAuth()
   const [selectedNote, setSelectedNote] = useState<NursingNote | null>(null)
@@ -51,6 +70,8 @@ const NotesTab: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filterTab, setFilterTab] = useState(0)
   const [form, setForm] = useState(blankForm())
+  const [templates, setTemplates] = useState<NoteTemplate[]>([])
+  const [templateChoice, setTemplateChoice] = useState('')
   const [editReason, setEditReason] = useState('')
   const contentRef = useRef<HTMLTextAreaElement>(null)
   const [pendingCaret, setPendingCaret] = useState<number | null>(null)
@@ -66,6 +87,7 @@ const NotesTab: React.FC = () => {
     addAddendumToResource,
     markResourceInError,
     adminAddNoteComment,
+    listNoteTemplates,
     loading,
   } = useChartingApi()
 
@@ -80,6 +102,15 @@ const NotesTab: React.FC = () => {
     }
     setPendingCaret(null)
   }, [pendingCaret])
+
+  // Load note templates for the selected course (plus any global templates).
+  // Declared before the early return to respect the rules of hooks. Resilient: ignore errors.
+  useEffect(() => {
+    listNoteTemplates(selectedCourse?._id)
+      .then(setTemplates)
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCourse?._id])
 
   if (!patient) {
     return <EmptyState message="No patient selected" />
@@ -128,12 +159,28 @@ const NotesTab: React.FC = () => {
   const startEdit = (note: NursingNote) => {
     setMode('edit')
     setEditingId(note._id)
-    setForm({ type: note.type, content: note.content, signed: note.signed })
+    setForm({
+      type: note.type,
+      content: note.content,
+      signed: note.signed,
+      authorRole: note.authorRole || 'RN',
+      format: (note.format || 'freetext') as 'freetext' | 'soap',
+      soap: note.soap
+        ? { subjective: '', objective: '', assessment: '', plan: '', ...note.soap }
+        : { subjective: '', objective: '', assessment: '', plan: '' },
+    })
     setEditReason('')
     setSelectedNote(note)
   }
 
   const insertSnippet = (snippet: string) => {
+    if (form.format === 'soap') {
+      // In SOAP mode, measured data belongs under Objective.
+      const current = form.soap.objective
+      const next = current ? current + '\n' + snippet : snippet
+      setForm({ ...form, soap: { ...form.soap, objective: next } })
+      return
+    }
     const el = contentRef.current
     const text = form.content
     const start = el?.selectionStart ?? text.length
@@ -144,7 +191,25 @@ const NotesTab: React.FC = () => {
   }
 
   const handleSave = async () => {
-    if (!form.content) return
+    const isSoap = form.format === 'soap'
+    const soapHasContent =
+      form.soap.subjective.trim() !== '' ||
+      form.soap.objective.trim() !== '' ||
+      form.soap.assessment.trim() !== '' ||
+      form.soap.plan.trim() !== ''
+    if (isSoap ? !soapHasContent : !form.content) return
+
+    // Compose the flat `content` (used for display/search) plus structured fields.
+    const composedContent = isSoap
+      ? [
+          form.soap.subjective && 'S: ' + form.soap.subjective,
+          form.soap.objective && 'O: ' + form.soap.objective,
+          form.soap.assessment && 'A: ' + form.soap.assessment,
+          form.soap.plan && 'P: ' + form.soap.plan,
+        ]
+          .filter(Boolean)
+          .join('\n\n')
+      : form.content
 
     try {
       if (mode === 'edit' && editingId) {
@@ -152,7 +217,14 @@ const NotesTab: React.FC = () => {
           patient._id,
           'notes',
           editingId,
-          { type: form.type, content: form.content, signed: form.signed },
+          {
+            type: form.type,
+            content: composedContent,
+            signed: form.signed,
+            authorRole: form.authorRole || 'RN',
+            format: form.format,
+            soap: isSoap ? { ...form.soap } : undefined,
+          },
           editReason || undefined,
         )
         setSelectedPatient(updated)
@@ -162,9 +234,11 @@ const NotesTab: React.FC = () => {
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: form.type,
           author: username,
-          authorRole: 'RN',
-          content: form.content,
+          authorRole: form.authorRole || 'RN',
+          content: composedContent,
           signed: form.signed,
+          format: form.format,
+          ...(isSoap ? { soap: { ...form.soap } } : {}),
         }
         const updated = await addNote(patient._id, note)
         setSelectedPatient(updated)
@@ -234,7 +308,7 @@ const NotesTab: React.FC = () => {
     <Box data-phi="true">
       <TabHeader
         title={instructorReview ? 'Student Notes — Instructor Review' : 'Nursing Notes'}
-        actionLabel={canAuthorNotes ? 'Add Note' : undefined}
+        actionLabel={canAuthorNotes ? 'Add Encounter' : undefined}
         onAction={canAuthorNotes ? startWrite : undefined}
       />
       <Grid container spacing={2} className={styles.tabContainer}>
@@ -416,12 +490,39 @@ const NotesTab: React.FC = () => {
                   </Stack>
                 </Box>
               </Box>
-              <Typography
-                variant="body2"
-                sx={{ color: '#333', lineHeight: 1.8, whiteSpace: 'pre-wrap', ...inErrorRowSx(activeNote.markedInError) }}
-              >
-                {activeNote.content}
-              </Typography>
+              {activeNote.format === 'soap' && activeNote.soap ? (
+                <Box sx={{ ...inErrorRowSx(activeNote.markedInError) }}>
+                  {(
+                    [
+                      ['Subjective', activeNote.soap.subjective],
+                      ['Objective', activeNote.soap.objective],
+                      ['Assessment', activeNote.soap.assessment],
+                      ['Plan', activeNote.soap.plan],
+                    ] as const
+                  )
+                    .filter(([, value]) => value && value.trim() !== '')
+                    .map(([label, value]) => (
+                      <Box key={label} sx={{ mb: 1.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#003D82' }}>
+                          {label}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: '#333', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}
+                        >
+                          {value}
+                        </Typography>
+                      </Box>
+                    ))}
+                </Box>
+              ) : (
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#333', lineHeight: 1.8, whiteSpace: 'pre-wrap', ...inErrorRowSx(activeNote.markedInError) }}
+                >
+                  {activeNote.content}
+                </Typography>
+              )}
               <AddendaList addenda={activeNote.addenda} />
               <InstructorCommentList comments={activeNote.instructorComments} />
             </Paper>
@@ -430,9 +531,38 @@ const NotesTab: React.FC = () => {
           {canAuthorNotes && (mode === 'write' || mode === 'edit') && (
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6" sx={{ color: '#003D82', fontWeight: 600, mb: 2 }}>
-                {mode === 'edit' ? 'Edit Note' : 'New Note'}
+                {mode === 'edit' ? 'Edit Encounter' : 'New Encounter'}
               </Typography>
               <Box sx={{ display: 'grid', gap: 2 }}>
+                {templates.length > 0 && (
+                  <SearchableSelect
+                    label="Start from template"
+                    value={templateChoice}
+                    onChange={(v) => {
+                      const t = templates.find((tpl) => tpl._id === v)
+                      if (t) {
+                        setForm({
+                          ...form,
+                          type: t.defaultType || form.type,
+                          authorRole: t.defaultRole || form.authorRole,
+                          format: t.format || 'freetext',
+                          content: t.format === 'soap' ? form.content : t.content || '',
+                          soap:
+                            t.format === 'soap'
+                              ? { subjective: '', objective: '', assessment: '', plan: '', ...(t.soap || {}) }
+                              : form.soap,
+                        })
+                      }
+                      // Acts as an action, not a bound field: reset after applying.
+                      setTemplateChoice('')
+                    }}
+                    options={templates.map((t) => ({
+                      value: t._id,
+                      label: t.courseId ? t.name : `${t.name} (Global)`,
+                    }))}
+                  />
+                )}
+
                 <SearchableSelect
                   label="Note Type"
                   value={form.type}
@@ -440,6 +570,35 @@ const NotesTab: React.FC = () => {
                   options={noteTypes}
                   freeSolo
                 />
+
+                <SearchableSelect
+                  label="Documented as (role)"
+                  value={form.authorRole}
+                  onChange={(v) => setForm({ ...form, authorRole: v })}
+                  options={AUTHOR_ROLES}
+                  freeSolo
+                />
+
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#6B6B6B', display: 'block', mb: 0.5 }}>
+                    Format
+                  </Typography>
+                  <ToggleButtonGroup
+                    exclusive
+                    size="small"
+                    value={form.format}
+                    onChange={(_, val) => {
+                      if (val) setForm({ ...form, format: val as 'freetext' | 'soap' })
+                    }}
+                  >
+                    <ToggleButton value="freetext" sx={{ textTransform: 'none' }}>
+                      Free text
+                    </ToggleButton>
+                    <ToggleButton value="soap" sx={{ textTransform: 'none' }}>
+                      SOAP
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
 
                 <Box>
                   <Typography variant="caption" sx={{ color: '#6B6B6B', display: 'block', mb: 0.5 }}>
@@ -461,15 +620,64 @@ const NotesTab: React.FC = () => {
                   </Stack>
                 </Box>
 
-                <TextField
-                  multiline
-                  rows={10}
-                  placeholder="Enter note content..."
-                  value={form.content}
-                  onChange={(e) => setForm({ ...form, content: e.target.value })}
-                  inputRef={contentRef}
-                  fullWidth
-                />
+                {form.format === 'soap' ? (
+                  <>
+                    <TextField
+                      multiline
+                      rows={3}
+                      label="Subjective"
+                      placeholder="Patient-reported symptoms, history..."
+                      value={form.soap.subjective}
+                      onChange={(e) =>
+                        setForm({ ...form, soap: { ...form.soap, subjective: e.target.value } })
+                      }
+                      fullWidth
+                    />
+                    <TextField
+                      multiline
+                      rows={3}
+                      label="Objective"
+                      placeholder="Measured data, vitals, exam findings..."
+                      value={form.soap.objective}
+                      onChange={(e) =>
+                        setForm({ ...form, soap: { ...form.soap, objective: e.target.value } })
+                      }
+                      fullWidth
+                    />
+                    <TextField
+                      multiline
+                      rows={3}
+                      label="Assessment"
+                      placeholder="Clinical impression, diagnosis..."
+                      value={form.soap.assessment}
+                      onChange={(e) =>
+                        setForm({ ...form, soap: { ...form.soap, assessment: e.target.value } })
+                      }
+                      fullWidth
+                    />
+                    <TextField
+                      multiline
+                      rows={3}
+                      label="Plan"
+                      placeholder="Interventions, follow-up, orders..."
+                      value={form.soap.plan}
+                      onChange={(e) =>
+                        setForm({ ...form, soap: { ...form.soap, plan: e.target.value } })
+                      }
+                      fullWidth
+                    />
+                  </>
+                ) : (
+                  <TextField
+                    multiline
+                    rows={10}
+                    placeholder="Enter note content..."
+                    value={form.content}
+                    onChange={(e) => setForm({ ...form, content: e.target.value })}
+                    inputRef={contentRef}
+                    fullWidth
+                  />
+                )}
 
                 <FormControlLabel
                   control={
@@ -496,7 +704,17 @@ const NotesTab: React.FC = () => {
                   <Button
                     variant="contained"
                     onClick={handleSave}
-                    disabled={loading || !form.content}
+                    disabled={
+                      loading ||
+                      (form.format === 'soap'
+                        ? !(
+                            form.soap.subjective.trim() ||
+                            form.soap.objective.trim() ||
+                            form.soap.assessment.trim() ||
+                            form.soap.plan.trim()
+                          )
+                        : !form.content)
+                    }
                     sx={{ backgroundColor: '#003D82' }}
                   >
                     {loading ? (
@@ -504,7 +722,7 @@ const NotesTab: React.FC = () => {
                     ) : mode === 'edit' ? (
                       'Save Changes'
                     ) : (
-                      'Save Note'
+                      'Save Encounter'
                     )}
                   </Button>
                   <Button

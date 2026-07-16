@@ -1,5 +1,6 @@
 import fileDb from '../utils/fileDb'
 import Course from './FileBasedCourse'
+import { computeAnchorMs, shiftIso } from '../utils/dateShift'
 
 export interface Modification {
   modifiedAt: string
@@ -83,6 +84,13 @@ export interface NursingNote extends Auditable {
   authorRole: string
   content: string
   signed: boolean
+  format?: 'freetext' | 'soap'
+  soap?: {
+    subjective?: string
+    objective?: string
+    assessment?: string
+    plan?: string
+  }
   instructorComments?: InstructorComment[]
 }
 
@@ -169,6 +177,8 @@ export interface Patient {
   availableUntil?: string // ISO date; window closes (inclusive through end of day). Absent = open-ended
   ownerAccountId?: string // set only on a per-student INSTANCE (the student's account uid)
   templateId?: string // on an instance, the source template's _id
+  relativeDateOffsetDays?: number // on a case-study TEMPLATE: the most-recent clinical entry is placed this many days before the student's open time (default 2 when absent)
+  dateShiftMs?: number // internal: on an INSTANCE, the ms shift applied to the copied timeline at clone time (so instructor notes can be shifted consistently later)
   instructorNotes?: NursingNote[] // derived/read-only: a live copy of the case-study template's nursingNotes, injected by the API for a student's instance. Not persisted.
   name: string
   age: number
@@ -342,6 +352,48 @@ const cloneTemplateForStudent = (template: Patient, ownerAccountId: string): Pat
         })
       }
     })
+  }
+
+  // Shift the whole copied clinical timeline so the template's most-recent
+  // entry lands `offsetDays` before "now" (the student's open time), preserving
+  // relative spacing. The anchor is computed from the intact TEMPLATE (its
+  // nursingNotes are still present); clone.nursingNotes is [] so there is
+  // nothing to shift there. Record the applied shift on the instance so
+  // instructor notes can be shifted consistently later.
+  const anchor = computeAnchorMs(template)
+  const offsetDays = template.relativeDateOffsetDays ?? 2
+  if (anchor !== null) {
+    const target = Date.now() - offsetDays * 86_400_000
+    const shiftMs = target - anchor
+    clone.dateShiftMs = shiftMs
+    clone.vitals?.forEach((v) => {
+      v.timestamp = shiftIso(v.timestamp, shiftMs)
+    })
+    clone.labs?.forEach((l) => {
+      l.date = shiftIso(l.date, shiftMs)
+    })
+    clone.encounters?.forEach((e) => {
+      e.date = shiftIso(e.date, shiftMs)
+    })
+    clone.ioEntries?.forEach((i) => {
+      i.timestamp = shiftIso(i.timestamp, shiftMs)
+    })
+    clone.orders?.forEach((o) => {
+      o.date = shiftIso(o.date, shiftMs)
+    })
+    clone.assessments?.forEach((a) => {
+      a.timestamp = shiftIso(a.timestamp, shiftMs)
+    })
+    clone.bradenScores?.forEach((b) => {
+      b.timestamp = shiftIso(b.timestamp, shiftMs)
+    })
+    clone.marEntries?.forEach((m) =>
+      m.administrations?.forEach((ad) => {
+        if (ad.givenAt) ad.givenAt = shiftIso(ad.givenAt, shiftMs)
+      }),
+    )
+  } else {
+    clone.dateShiftMs = 0
   }
 
   // Strip the identity/timestamp fields so create() assigns fresh ones the same

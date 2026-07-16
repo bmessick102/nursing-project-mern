@@ -32,6 +32,7 @@ interface CreatePatientPayload {
   isCaseStudy?: boolean
   availableFrom?: string
   availableUntil?: string
+  relativeDateOffsetDays?: number
 }
 
 interface CreatePatientDialogProps {
@@ -63,6 +64,7 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
   const [isCaseStudy, setIsCaseStudy] = useState(true)
   const [availableFrom, setAvailableFrom] = useState(() => new Date().toISOString().slice(0, 10))
   const [availableUntil, setAvailableUntil] = useState('')
+  const [relativeDateOffsetDays, setRelativeDateOffsetDays] = useState(2)
 
   React.useEffect(() => {
     if (open) {
@@ -78,6 +80,7 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
       setIsCaseStudy(true)
       setAvailableFrom(new Date().toISOString().slice(0, 10))
       setAvailableUntil('')
+      setRelativeDateOffsetDays(2)
     }
   }, [open, defaultCourseId, courses])
 
@@ -124,6 +127,7 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
       isCaseStudy,
       availableFrom: isCaseStudy ? availableFrom : undefined,
       availableUntil: isCaseStudy && availableUntil ? availableUntil : undefined,
+      relativeDateOffsetDays: isCaseStudy ? relativeDateOffsetDays : undefined,
     })
   }
 
@@ -211,6 +215,19 @@ const CreatePatientDialog: React.FC<CreatePatientDialogProps> = ({
                   value={availableUntil}
                   onChange={(e) => setAvailableUntil(e.target.value)}
                   inputProps={{ min: availableFrom }}
+                />
+                <TextField
+                  label="Most recent entry = N days before student opens"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  helperText="e.g. 2 = last note dated two days before the student starts"
+                  value={relativeDateOffsetDays}
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10)
+                    setRelativeDateOffsetDays(Number.isNaN(parsed) ? relativeDateOffsetDays : parsed)
+                  }}
+                  inputProps={{ min: 0, max: 60 }}
                 />
               </Stack>
             )}

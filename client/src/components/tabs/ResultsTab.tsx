@@ -199,6 +199,35 @@ const ResultsTab: React.FC = () => {
   const active = selectedCategory || categories[0] || 'CHEMISTRY'
   const filtered = labs.filter((lab) => lab.category === active)
 
+  // --- Pivot derivations: transpose the flat lab list into a spreadsheet ---
+  // Rows = test names (first-appearance order); columns = day-keys (newest first).
+  const dayKey = (iso: string) => new Date(iso).toLocaleDateString()
+
+  // Map each display day-key to its underlying timestamp so column ordering is based on
+  // the real date, not on re-parsing a locale-formatted string (robust across locales).
+  const dayKeyToTime: Record<string, number> = {}
+  filtered.forEach((lab) => {
+    const key = dayKey(lab.date)
+    const t = new Date(lab.date).getTime()
+    if (!(key in dayKeyToTime) || t > dayKeyToTime[key]) dayKeyToTime[key] = t
+  })
+
+  // Unique day-keys, sorted descending (newest/today left-most).
+  const dateKeys = Array.from(new Set(filtered.map((lab) => dayKey(lab.date)))).sort(
+    (a, b) => dayKeyToTime[b] - dayKeyToTime[a],
+  )
+
+  // Unique test names in first-appearance order (these become the rows).
+  const testNames = Array.from(new Set(filtered.map((lab) => lab.name)))
+
+  // Lookup: testName -> dayKey -> LabResult (last-writer-wins on name+day collision).
+  const cellByNameDate: Record<string, Record<string, LabResult>> = {}
+  filtered.forEach((lab) => {
+    const key = dayKey(lab.date)
+    if (!cellByNameDate[lab.name]) cellByNameDate[lab.name] = {}
+    cellByNameDate[lab.name][key] = lab
+  })
+
   // When the chosen test name matches a catalog entry, drive entry with the right input:
   // numeric → slider, qualitative → select, otherwise free text.
   const selectedEntry = findLabEntry(form.name)
@@ -367,66 +396,101 @@ const ResultsTab: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} md={9}>
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Test Name</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Result</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Reference Range</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Flag</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}></TableCell>
+                    <TableCell sx={{ fontWeight: 600, minWidth: 200 }}>Test</TableCell>
+                    {dateKeys.map((key) => (
+                      <TableCell key={key} sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {key}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filtered.map((lab) => (
-                    <TableRow key={lab._id} sx={inErrorRowSx(lab.markedInError)}>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          {lab.name}
-                          {lab.markedInError && <InErrorBanner entry={lab} compact />}
-                          {lab.lastModifiedAt && !lab.markedInError && (
-                            <Typography variant="caption" sx={{ color: '#6B6B6B', fontStyle: 'italic' }}>
-                              (edited)
+                  {testNames.map((name) => {
+                    // Representative lab for this row (for unit / reference range display).
+                    const rep = dateKeys
+                      .map((key) => cellByNameDate[name]?.[key])
+                      .find((l): l is LabResult => Boolean(l))
+                    return (
+                      <TableRow key={name}>
+                        <TableCell sx={{ verticalAlign: 'top' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {name}
+                          </Typography>
+                          {rep && (rep.unit || rep.referenceRange) && (
+                            <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
+                              {[rep.unit, rep.referenceRange].filter(Boolean).join(' · ')}
                             </Typography>
                           )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {lab.value} {lab.unit}
-                      </TableCell>
-                      <TableCell sx={{ color: '#6B6B6B' }}>{lab.referenceRange}</TableCell>
-                      <TableCell>
-                        {lab.flag ? (
-                          <Chip
-                            label={lab.flag}
-                            size="small"
-                            sx={{
-                              backgroundColor: getFlagColor(lab.flag),
-                              color: 'white',
-                              fontWeight: 600,
-                            }}
-                          />
-                        ) : (
-                          <Typography variant="caption" sx={{ color: '#6B6B6B' }}>
-                            —
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell sx={{ color: '#6B6B6B' }}>
-                        {new Date(lab.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <EditMenu
-                          entry={lab}
-                          onEdit={() => startEdit(lab)}
-                          onMarkInError={() => setMarkInErrorFor(lab)}
-                          onViewHistory={() => setHistoryFor(lab)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        {dateKeys.map((key) => {
+                          const lab = cellByNameDate[name]?.[key]
+                          if (!lab) {
+                            return (
+                              <TableCell key={key} sx={{ color: '#C4C4C4' }}>
+                                —
+                              </TableCell>
+                            )
+                          }
+                          return (
+                            <TableCell
+                              key={key}
+                              sx={{ ...inErrorRowSx(lab.markedInError), verticalAlign: 'top' }}
+                            >
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                alignItems="center"
+                                sx={{ flexWrap: 'wrap' }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: lab.flag ? 700 : 400,
+                                    color: lab.flag ? getFlagColor(lab.flag) : 'inherit',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {lab.value} {lab.unit}
+                                </Typography>
+                                {lab.flag && (
+                                  <Chip
+                                    label={lab.flag}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: getFlagColor(lab.flag),
+                                      color: 'white',
+                                      fontWeight: 600,
+                                      height: 18,
+                                      '& .MuiChip-label': { px: 0.75 },
+                                    }}
+                                  />
+                                )}
+                                <EditMenu
+                                  entry={lab}
+                                  onEdit={() => startEdit(lab)}
+                                  onMarkInError={() => setMarkInErrorFor(lab)}
+                                  onViewHistory={() => setHistoryFor(lab)}
+                                />
+                              </Stack>
+                              {lab.markedInError && <InErrorBanner entry={lab} compact />}
+                              {lab.lastModifiedAt && !lab.markedInError && (
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: '#6B6B6B', fontStyle: 'italic', display: 'block' }}
+                                >
+                                  (edited)
+                                </Typography>
+                              )}
+                            </TableCell>
+                          )
+                        })}
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

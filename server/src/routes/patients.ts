@@ -6,6 +6,7 @@ import Patient, { type Patient as PatientRecord } from '../models/FileBasedPatie
 import Course from '../models/FileBasedCourse'
 import Account from '../models/FileBasedAccount'
 import fileDb from '../utils/fileDb'
+import { shiftNoteDateTime } from '../utils/dateShift'
 
 // Strip dangerous keys from any client-supplied object before it is spread into a
 // stored document. Blocks prototype-pollution (__proto__/constructor/prototype).
@@ -32,7 +33,11 @@ const MAX_ENTRIES = {
 const withInstructorNotes = (patient: PatientRecord): PatientRecord => {
   if (!patient?.templateId) return patient
   const template = Patient.findById(patient.templateId)
-  return { ...patient, instructorNotes: template?.nursingNotes ?? [] }
+  const shift = patient.dateShiftMs || 0
+  const notes = (template?.nursingNotes ?? []).map((n) =>
+    shift ? { ...n, ...shiftNoteDateTime(n.date, n.time, shift) } : n,
+  )
+  return { ...patient, instructorNotes: notes }
 }
 
 // True if the caller is an administrator (role-based, any data).

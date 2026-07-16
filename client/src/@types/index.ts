@@ -66,6 +66,20 @@ export interface Course {
   enrolledAccountIds?: string[]
 }
 
+export interface NoteTemplate {
+  _id: string
+  name: string
+  courseId: string | null // null = global (all courses)
+  format: 'freetext' | 'soap'
+  content?: string
+  soap?: { subjective?: string; objective?: string; assessment?: string; plan?: string }
+  defaultRole?: string // e.g. 'RN', 'Physician (MD)'
+  defaultType?: string // e.g. 'Progress Note'
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface VitalSigns extends Auditable {
   _id: string
   timestamp: string
@@ -122,6 +136,13 @@ export interface NursingNote extends Auditable {
   authorRole: string
   content: string
   signed: boolean
+  format?: 'freetext' | 'soap'
+  soap?: {
+    subjective?: string
+    objective?: string
+    assessment?: string
+    plan?: string
+  }
   instructorComments?: InstructorComment[]
 }
 
@@ -208,6 +229,8 @@ export interface Patient {
   availableUntil?: string
   ownerAccountId?: string
   templateId?: string
+  relativeDateOffsetDays?: number // on a case-study TEMPLATE: the most-recent clinical entry is placed this many days before the student's open time (default 2 when absent)
+  dateShiftMs?: number // internal: on an INSTANCE, the ms shift applied to the copied timeline at clone time (so instructor notes can be shifted consistently later)
   instructorNotes?: NursingNote[] // derived/read-only: a live copy of the case-study template's nursingNotes, injected by the API for a student's instance. Not persisted.
   name: string
   age: number

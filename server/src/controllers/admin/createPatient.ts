@@ -18,6 +18,7 @@ const createPatient: RequestHandler = async (req, res, next) => {
         isCaseStudy: joi.instance.boolean().optional(),
         availableFrom: joi.instance.string().isoDate().allow('').optional(),
         availableUntil: joi.instance.string().isoDate().allow('').optional(),
+        relativeDateOffsetDays: joi.instance.number().integer().min(0).max(60).optional(),
       },
       req.body,
     )
@@ -35,6 +36,7 @@ const createPatient: RequestHandler = async (req, res, next) => {
       isCaseStudy,
       availableFrom,
       availableUntil,
+      relativeDateOffsetDays,
     } = req.body || {}
 
     if (!Course.findById(courseId)) {
@@ -61,6 +63,7 @@ const createPatient: RequestHandler = async (req, res, next) => {
       isCaseStudy: isCaseStudy ?? true,
       availableFrom: availableFrom || undefined,
       availableUntil: availableUntil || undefined,
+      relativeDateOffsetDays: relativeDateOffsetDays ?? undefined,
       vitals: [],
       labs: [],
       encounters: [],

@@ -13,6 +13,7 @@ import type {
   LabResult,
   MAREntry,
   Order,
+  NoteTemplate,
 } from '@types'
 
 type CaseStudyInstancesResponse = {
@@ -667,6 +668,82 @@ export const useChartingApi = () => {
     [reportError],
   )
 
+  // --- Faculty note templates ---
+
+  const listNoteTemplates = useCallback(
+    async (courseId?: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.get('/note-templates', {
+          params: courseId ? { courseId } : undefined,
+        })
+        return data.data as NoteTemplate[]
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const createNoteTemplate = useCallback(
+    async (payload: Partial<NoteTemplate>) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.post('/note-templates', payload)
+        return data.data as NoteTemplate
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const updateNoteTemplate = useCallback(
+    async (id: string, patch: Partial<NoteTemplate>) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.patch(`/note-templates/${id}`, patch)
+        return data.data as NoteTemplate
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
+  const deleteNoteTemplate = useCallback(
+    async (id: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await axios.delete(`/note-templates/${id}`)
+        return data.data
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err.message
+        reportError(errorMsg)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [reportError],
+  )
+
   return {
     loading,
     error,
@@ -700,5 +777,9 @@ export const useChartingApi = () => {
     adminUpdateAccount,
     adminListInstances,
     adminAddNoteComment,
+    listNoteTemplates,
+    createNoteTemplate,
+    updateNoteTemplate,
+    deleteNoteTemplate,
   }
 }
