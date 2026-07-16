@@ -213,6 +213,37 @@ const theme = createTheme({
         },
       },
     },
+    // Standardize every Autocomplete-based dropdown (SearchableSelect + raw Autocompletes):
+    // uniform option text size and a single, clearly-visible hover/keyboard highlight so the
+    // list reads consistently and the highlight never skips rows.
+    MuiAutocomplete: {
+      styleOverrides: {
+        listbox: {
+          fontSize: '0.875rem',
+          paddingTop: 4,
+          paddingBottom: 4,
+        },
+        option: {
+          fontSize: '0.875rem',
+          minHeight: 40,
+          color: CUW_TEXT,
+          '&:hover': {
+            backgroundColor: 'rgba(0, 61, 130, 0.06)',
+          },
+          // Keyboard/auto-highlight focus.
+          '&.Mui-focused': {
+            backgroundColor: 'rgba(0, 61, 130, 0.10)',
+          },
+          '&[aria-selected="true"]': {
+            backgroundColor: 'rgba(0, 61, 130, 0.12)',
+            fontWeight: 600,
+          },
+          '&[aria-selected="true"].Mui-focused': {
+            backgroundColor: 'rgba(0, 61, 130, 0.16)',
+          },
+        },
+      },
+    },
   },
 })
 

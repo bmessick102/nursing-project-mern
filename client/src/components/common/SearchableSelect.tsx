@@ -47,11 +47,14 @@ const renderOption = (
   props: React.HTMLAttributes<HTMLLIElement> & { key?: React.Key },
   option: SelectOption,
 ) => {
+  // Use MUI's own list key (unique per rendered option). Using option.value here
+  // collapses duplicate-value options in React's reconciliation, which desyncs MUI's
+  // data-option-index tracking and makes the hover highlight skip every other row.
   const { key, ...liProps } = props
   return (
-    <li {...liProps} key={option.value}>
-      <span style={{ display: 'flex', flexDirection: 'column' }}>
-        <span>{option.label}</span>
+    <li key={key} {...liProps}>
+      <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{option.label}</span>
         {option.detail && (
           <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{option.detail}</span>
         )}

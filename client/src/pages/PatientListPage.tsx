@@ -122,6 +122,7 @@ const PatientListPage: React.FC = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               fullWidth
+              inputProps={{ 'aria-label': 'Search patients' }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

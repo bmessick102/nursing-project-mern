@@ -414,6 +414,7 @@ const SummaryTab: React.FC = () => {
             <Grid item xs={12} sm={5}>
               <Autocomplete
                 freeSolo
+                fullWidth
                 options={MED_OPTIONS}
                 groupBy={(o) => (typeof o === 'string' ? '' : o.drugClass)}
                 getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}
@@ -453,6 +454,7 @@ const SummaryTab: React.FC = () => {
             <Grid item xs={6} sm={3}>
               <Autocomplete
                 freeSolo
+                fullWidth
                 options={doseOptions}
                 inputValue={medDraft.dose}
                 onInputChange={(_, v, reason) => {

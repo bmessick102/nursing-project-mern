@@ -525,6 +525,7 @@ const ResultsTab: React.FC = () => {
             <Grid item xs={12}>
               <Autocomplete
                 freeSolo
+                fullWidth
                 options={LAB_CATALOG}
                 groupBy={(option) => (typeof option === 'string' ? '' : option.category)}
                 getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}

@@ -368,6 +368,7 @@ const MARTab: React.FC = () => {
             <Grid item xs={12}>
               <Autocomplete
                 freeSolo
+                fullWidth
                 options={MED_OPTIONS}
                 groupBy={(o) => (typeof o === 'string' ? '' : o.drugClass)}
                 getOptionLabel={(o) => (typeof o === 'string' ? o : o.name)}

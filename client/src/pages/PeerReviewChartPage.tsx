@@ -188,7 +188,7 @@ const PeerReviewChartPage: React.FC = () => {
                               </Typography>
                               <Typography
                                 variant="body2"
-                                sx={{ color: '#333', whiteSpace: 'pre-wrap' }}
+                                sx={{ color: '#333', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
                               >
                                 {value}
                               </Typography>
@@ -196,7 +196,10 @@ const PeerReviewChartPage: React.FC = () => {
                           ))}
                       </Box>
                     ) : (
-                      <Typography variant="body2" sx={{ color: '#333', whiteSpace: 'pre-wrap' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: '#333', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+                      >
                         {note.content}
                       </Typography>
                     )}
@@ -216,6 +219,7 @@ const PeerReviewChartPage: React.FC = () => {
                         <ToggleButtonGroup
                           exclusive
                           size="small"
+                          aria-label="Your assessment"
                           value={control.correct}
                           onChange={(_, val) => {
                             if (val !== null) setControl(note._id, { correct: val })

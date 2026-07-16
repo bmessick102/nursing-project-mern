@@ -162,7 +162,7 @@ const CourseSelectionPage: React.FC = () => {
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
                   disabled={joining}
-                  inputProps={{ spellCheck: false, autoCapitalize: 'characters' }}
+                  inputProps={{ spellCheck: false, autoCapitalize: 'characters', 'aria-label': 'Course code' }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
