@@ -23,6 +23,20 @@ const updateCourse: RequestHandler = (req, res, next) => {
         return next({ statusCode: 400, message: 'Owner must be an existing faculty or admin account.' })
     }
 
+    // Reject a duplicate course code among the owner's OTHER courses (case-insensitive),
+    // excluding the course being edited — consistent with the create-course guard.
+    if (typeof req.body?.code === 'string' && req.body.code.trim() !== '') {
+      const course = Course.findById(id)
+      const newCode = req.body.code.trim().toUpperCase()
+      if (course && course.ownerAccountId && newCode !== (course.code || '').toUpperCase()) {
+        const dupe = Course.findOwnedFor(course.ownerAccountId).some(
+          (c) => c._id !== id && (c.code || '').toUpperCase() === newCode,
+        )
+        if (dupe)
+          return next({ statusCode: 409, message: 'You already have a course with that code.' })
+      }
+    }
+
     const patch: Record<string, unknown> = {}
     for (const key of ALLOWED) {
       if (key in (req.body || {})) patch[key] = req.body[key]

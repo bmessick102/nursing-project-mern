@@ -39,6 +39,7 @@ import { useSnackbar } from 'contexts/SnackbarContext'
 import EmptyState from 'components/common/EmptyState'
 import SearchableSelect from 'components/common/SearchableSelect'
 import CreateCourseDialog from 'components/admin/CreateCourseDialog'
+import EditCourseDialog from 'components/admin/EditCourseDialog'
 import CreatePatientDialog from 'components/admin/CreatePatientDialog'
 import RegenerateCodeDialog from 'components/admin/RegenerateCodeDialog'
 import CreateAccountDialog from 'components/admin/CreateAccountDialog'
@@ -124,6 +125,7 @@ const AdminDashboardPage: React.FC = () => {
   const [createPatientOpen, setCreatePatientOpen] = useState(false)
   const [regenCourse, setRegenCourse] = useState<Course | null>(null)
   const [assignOwnerCourse, setAssignOwnerCourse] = useState<Course | null>(null)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [copySnack, setCopySnack] = useState<string | null>(null)
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdminAccount | null>(null)
@@ -215,6 +217,23 @@ const AdminDashboardPage: React.FC = () => {
       await adminCreateCourse(payload)
       notifySuccess(`Course "${payload.name}" created.`)
       setCreateCourseOpen(false)
+      loadCourses()
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
+  }
+
+  const handleUpdateCourse = async (payload: {
+    name: string
+    code: string
+    instructor: string
+    description: string
+  }) => {
+    if (!editingCourse) return
+    try {
+      await adminUpdateCourse(editingCourse._id, payload)
+      notifySuccess(`Course "${payload.name}" updated.`)
+      setEditingCourse(null)
       loadCourses()
     } catch (err) {
       /* surfaced via snackbar */
@@ -658,6 +677,15 @@ const AdminDashboardPage: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Tooltip title="Edit course">
+                              <IconButton
+                                size="small"
+                                onClick={() => setEditingCourse(c)}
+                                aria-label="edit course"
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="Regenerate code (revokes old)">
                               <IconButton
                                 size="small"
@@ -1223,6 +1251,18 @@ const AdminDashboardPage: React.FC = () => {
         defaultCourseId={filterCourseId || null}
         onClose={() => setCreatePatientOpen(false)}
         onSubmit={handleCreatePatient}
+      />
+      <EditCourseDialog
+        open={editingCourse !== null}
+        loading={loading}
+        initial={{
+          name: editingCourse?.name || '',
+          code: editingCourse?.code || '',
+          instructor: editingCourse?.instructor || '',
+          description: editingCourse?.description || '',
+        }}
+        onClose={() => setEditingCourse(null)}
+        onSubmit={handleUpdateCourse}
       />
       <RegenerateCodeDialog
         open={regenCourse !== null}
