@@ -8,7 +8,21 @@ import {
   Button,
   Grid,
   CircularProgress,
+  InputAdornment,
+  IconButton,
+  Tooltip,
 } from '@mui/material'
+import { Casino } from '@mui/icons-material'
+
+// Unambiguous alphabet (no 0/1/I/O) matching the server's join-code style. Math.random is
+// fine here — this is a convenience default; uniqueness is enforced server-side and the
+// student join code is crypto-random regardless.
+const CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+const randomCourseCode = (): string => {
+  let tail = ''
+  for (let i = 0; i < 4; i++) tail += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]
+  return `CRSE${tail}`
+}
 
 interface CreateCourseDialogProps {
   open: boolean
@@ -79,6 +93,22 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({
               value={code}
               onChange={(e) => setCode(e.target.value)}
               inputProps={{ style: { textTransform: 'uppercase' } }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title="Generate a random code">
+                      <IconButton
+                        edge="end"
+                        size="small"
+                        onClick={() => setCode(randomCourseCode())}
+                        aria-label="generate random course code"
+                      >
+                        <Casino fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              }}
               required
             />
           </Grid>

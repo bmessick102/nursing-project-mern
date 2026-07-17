@@ -16,6 +16,17 @@ const createCourse: RequestHandler = async (req, res, next) => {
     if (validationError) return next(validationError)
 
     const { name, code, instructor, description } = req.body
+
+    // Reject a duplicate course code among the creator's own courses (case-insensitive).
+    // Scoped to the owner so two different faculty can still reuse a code, and legacy/other
+    // courses don't false-positive. The student join code is unique regardless.
+    const dupe = Course.findOwnedFor(req.auth?.uid || '').some(
+      (c) => (c.code || '').toUpperCase() === String(code).trim().toUpperCase(),
+    )
+    if (dupe) {
+      return next({ statusCode: 409, message: 'You already have a course with that code.' })
+    }
+
     const created = Course.create({
       name: String(name).trim(),
       code: String(code).trim(),
