@@ -1,6 +1,7 @@
 import { type RequestHandler } from 'express'
 import Patient from '../../models/FileBasedPatient'
 import Account from '../../models/FileBasedAccount'
+import { canManageCourseId } from '../../utils/authz'
 
 // Admin-only: list the per-student instances spawned from a case-study template,
 // each joined with the owning student's display name. Returns lightweight summaries
@@ -11,6 +12,10 @@ const listInstances: RequestHandler = async (req, res, next) => {
     const template = Patient.findById(templateId)
     if (!template || !template.isCaseStudy) {
       return next({ statusCode: 404, message: 'Case study not found' })
+    }
+
+    if (!canManageCourseId(req, template.courseId)) {
+      return next({ statusCode: 403, message: 'You can only manage patients in your own courses.' })
     }
 
     const instances = Patient.findByTemplate(templateId).map((instance) => {
@@ -25,6 +30,7 @@ const listInstances: RequestHandler = async (req, res, next) => {
         studentName,
         noteCount: (instance.nursingNotes || []).length,
         updatedAt: instance.updatedAt,
+        grade: instance.grade,
       }
     })
 

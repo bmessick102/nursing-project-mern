@@ -2,6 +2,7 @@ import { type RequestHandler } from 'express'
 import joi from '../../utils/joi'
 import Patient from '../../models/FileBasedPatient'
 import Account from '../../models/FileBasedAccount'
+import { canManageCourseId } from '../../utils/authz'
 
 // Faculty (instructor or admin) grade a student's case-study instance. The grader's
 // identity is resolved server-side from the authenticated account so attribution
@@ -25,6 +26,10 @@ const gradeInstance: RequestHandler = async (req, res, next) => {
 
     const patient = Patient.findById(req.params.id as string)
     if (!patient) return next({ statusCode: 404, message: 'Patient not found' })
+
+    if (!canManageCourseId(req, patient.courseId)) {
+      return next({ statusCode: 403, message: 'You can only manage patients in your own courses.' })
+    }
 
     // Resolve grader identity from the authenticated account.
     const acct = req.auth?.uid ? Account.findById(req.auth.uid) : undefined

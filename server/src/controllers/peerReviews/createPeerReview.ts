@@ -4,6 +4,7 @@ import PeerReview from '../../models/FileBasedPeerReview'
 import Patient from '../../models/FileBasedPatient'
 import Account from '../../models/FileBasedAccount'
 import Course from '../../models/FileBasedCourse'
+import { canManageCourseId } from '../../utils/authz'
 
 // Resolve an account's display name without ever leaking the password hash.
 const resolveName = (accountId: string): string => {
@@ -37,6 +38,11 @@ const createPeerReview: RequestHandler = async (req, res, next) => {
     const courseId = instance.courseId
     const templateId = instance.templateId
     const revieweeAccountId = instance.ownerAccountId
+
+    // Ownership: faculty may only assign peer reviews within their own courses.
+    if (!canManageCourseId(req, courseId)) {
+      return next({ statusCode: 403, message: 'You can only assign peer reviews within your own courses.' })
+    }
 
     if (reviewerAccountId === revieweeAccountId) {
       return next({ statusCode: 400, message: 'A student cannot review their own chart' })

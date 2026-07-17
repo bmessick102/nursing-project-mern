@@ -27,6 +27,7 @@ type CaseStudyInstancesResponse = {
     studentName: string
     noteCount: number
     updatedAt: string
+    grade?: { score: number; maxScore: number; feedback?: string; gradedBy: string; gradedAt: string }
   }>
 }
 

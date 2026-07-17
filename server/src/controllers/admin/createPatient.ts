@@ -2,6 +2,7 @@ import { type RequestHandler } from 'express'
 import joi from '../../utils/joi'
 import Patient from '../../models/FileBasedPatient'
 import Course from '../../models/FileBasedCourse'
+import { canManageCourseId } from '../../utils/authz'
 
 const createPatient: RequestHandler = async (req, res, next) => {
   try {
@@ -41,6 +42,10 @@ const createPatient: RequestHandler = async (req, res, next) => {
 
     if (!Course.findById(courseId)) {
       return next({ statusCode: 400, message: 'courseId does not match any existing course' })
+    }
+
+    if (!canManageCourseId(req, courseId)) {
+      return next({ statusCode: 403, message: 'You can only add patients to your own courses.' })
     }
 
     if (

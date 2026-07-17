@@ -21,6 +21,7 @@ interface GradeDialogProps {
   open: boolean
   loading?: boolean
   studentName?: string
+  initial?: { score: number; maxScore: number; feedback?: string }
   onClose: () => void
   onSubmit: (grade: GradePayload) => Promise<void> | void
 }
@@ -29,6 +30,7 @@ const GradeDialog: React.FC<GradeDialogProps> = ({
   open,
   loading,
   studentName,
+  initial,
   onClose,
   onSubmit,
 }) => {
@@ -38,11 +40,17 @@ const GradeDialog: React.FC<GradeDialogProps> = ({
 
   React.useEffect(() => {
     if (open) {
-      setScore('')
-      setMaxScore('100')
-      setFeedback('')
+      if (initial) {
+        setScore(String(initial.score))
+        setMaxScore(String(initial.maxScore))
+        setFeedback(initial.feedback ?? '')
+      } else {
+        setScore('')
+        setMaxScore('100')
+        setFeedback('')
+      }
     }
-  }, [open])
+  }, [open, initial])
 
   const scoreNum = Number(score)
   const maxScoreNum = Number(maxScore)

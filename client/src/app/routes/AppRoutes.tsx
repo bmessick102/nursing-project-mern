@@ -9,7 +9,7 @@ import AppShell from 'app/layouts/AppShell'
 import PublicShell from 'app/layouts/PublicShell'
 import PatientLayout from 'app/layouts/PatientLayout'
 import RequireAuth from 'app/routes/RequireAuth'
-import RequireAdmin from 'app/routes/RequireAdmin'
+import RequireStaff from 'app/routes/RequireStaff'
 
 // Auth pages (eager — first paint for unauthenticated users)
 import LoginPage from 'pages/LoginPage'
@@ -53,9 +53,11 @@ const SmartRoot: React.FC = () => {
   if (initializing) return <Fallback />
   if (!isLoggedIn) return <Navigate to="/login" replace />
 
-  const isAdmin =
-    account?.role === 'administrator' || account?.role === 'admin'
-  if (isAdmin) return <Navigate to="/admin" replace />
+  const isStaff =
+    account?.role === 'administrator' ||
+    account?.role === 'admin' ||
+    account?.role === 'instructor'
+  if (isStaff) return <Navigate to="/admin" replace />
   if (!selectedCourse) return <Navigate to="/course-select" replace />
   if (!selectedPatient) return <Navigate to="/patients" replace />
   return (
@@ -99,7 +101,7 @@ const AppRoutes: React.FC = () => {
         </Route>
 
         {/* Admin routes */}
-        <Route element={<RequireAdmin />}>
+        <Route element={<RequireStaff />}>
           <Route element={<AppShell />}>
             <Route path="/admin" element={S(AdminDashboardPage)} />
           </Route>

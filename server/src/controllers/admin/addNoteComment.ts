@@ -3,6 +3,7 @@ import joi from '../../utils/joi'
 import Patient from '../../models/FileBasedPatient'
 import Account from '../../models/FileBasedAccount'
 import fileDb from '../../utils/fileDb'
+import { canManageCourseId } from '../../utils/authz'
 
 // Admin-only: append an instructor comment to a single nursing note. The commenter's
 // identity is resolved server-side from the authenticated account (never trusted from
@@ -19,6 +20,10 @@ const addNoteComment: RequestHandler = async (req, res, next) => {
 
     const patient = Patient.findById(req.params.id as string)
     if (!patient) return next({ statusCode: 404, message: 'Patient not found' })
+
+    if (!canManageCourseId(req, patient.courseId)) {
+      return next({ statusCode: 403, message: 'You can only manage patients in your own courses.' })
+    }
 
     const idx = patient.nursingNotes.findIndex((n) => n._id === req.params.noteId)
     if (idx === -1) return next({ statusCode: 404, message: 'Note not found' })

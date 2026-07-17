@@ -14,6 +14,8 @@ const normalizeCourse = (raw: any): Course => ({
   description: raw.description,
   inviteCode: raw.inviteCode || generateCourseCode(raw.code),
   enrolledAccountIds: Array.isArray(raw.enrolledAccountIds) ? raw.enrolledAccountIds : [],
+  ownerAccountId: raw.ownerAccountId,
+  archived: raw.archived,
   createdAt: raw.createdAt || new Date().toISOString(),
   updatedAt: raw.updatedAt || new Date().toISOString(),
 })
@@ -51,6 +53,7 @@ const create = (
   data: Omit<Course, '_id' | 'createdAt' | 'updatedAt' | 'inviteCode' | 'enrolledAccountIds'> & {
     inviteCode?: string
     enrolledAccountIds?: string[]
+    ownerAccountId?: string
   },
 ): Course => {
   const courses = readAll()
@@ -63,6 +66,7 @@ const create = (
     description: data.description,
     inviteCode: data.inviteCode || generateCourseCode(data.code),
     enrolledAccountIds: data.enrolledAccountIds || [],
+    ownerAccountId: data.ownerAccountId,
     createdAt: now,
     updatedAt: now,
   }
@@ -112,6 +116,10 @@ const addEnrollment = (id: string, accountId: string): Course | undefined => {
 
 const findEnrolledFor = (accountId: string): Course[] =>
   readAll().filter((c) => c.enrolledAccountIds.includes(accountId))
+
+// Courses owned (created) by a given faculty/admin account.
+const findOwnedFor = (accountId: string): Course[] =>
+  readAll().filter((c) => c.ownerAccountId === accountId)
 
 // Shape a course for the response body based on the caller's role. Admins get
 // the full record; everyone else has the secret `inviteCode` and roster
@@ -163,6 +171,7 @@ export default {
   regenerateCode,
   addEnrollment,
   findEnrolledFor,
+  findOwnedFor,
   serializeCourse,
   initializeDefaultCourses,
 }

@@ -7,6 +7,7 @@ import Course from '../models/FileBasedCourse'
 import Account from '../models/FileBasedAccount'
 import fileDb from '../utils/fileDb'
 import { shiftNoteDateTime } from '../utils/dateShift'
+import { isAdminRole, ownsCourse } from '../utils/authz'
 
 // Strip dangerous keys from any client-supplied object before it is spread into a
 // stored document. Blocks prototype-pollution (__proto__/constructor/prototype).
@@ -85,6 +86,12 @@ const checkPatientAccess: RequestHandler = (req, res, next) => {
   if (isAdmin(req)) {
     return next()
   }
+  // A faculty member who OWNS the patient's course gets the same full access an
+  // admin does — including templates and any patient in their course.
+  const course = Course.findById(patient.courseId)
+  if (ownsCourse(req, course)) {
+    return next()
+  }
   // A case-study TEMPLATE is never reachable by a student directly — they work on
   // their own private instance (surfaced/created via the course listing).
   if (patient.isCaseStudy) {
@@ -124,7 +131,11 @@ const getAllPatients: RequestHandler = (req, res, next) => {
 const getPatientsByCourse: RequestHandler = (req, res, next) => {
   try {
     const courseId = req.params.courseId as string
-    if (!isEnrolledOrAdmin(req, courseId)) {
+    const course = Course.findById(courseId)
+    // Admins and course-owning faculty are "elevated": they preview the course
+    // without cloning. Everyone else must be enrolled.
+    const elevated = isAdminRole(req) || ownsCourse(req, course)
+    if (!elevated && !isEnrolledOrAdmin(req, courseId)) {
       return next({
         statusCode: 403,
         message: 'You are not enrolled in this course.',
@@ -132,9 +143,10 @@ const getPatientsByCourse: RequestHandler = (req, res, next) => {
     }
     const patients = Patient.findByCourse(courseId)
 
-    // Administrator preview: templates + legacy patients, regardless of window.
-    // Per-student instances are private working copies and are never surfaced here.
-    if (isAdmin(req)) {
+    // Elevated preview (admins + course owners): templates + legacy patients,
+    // regardless of window. Per-student instances are private working copies and
+    // are never surfaced here.
+    if (elevated) {
       const data = patients.filter((p) => !p.ownerAccountId)
       res.status(200).json({
         message: 'Successfully retrieved patients',

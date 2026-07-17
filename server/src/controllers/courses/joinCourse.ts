@@ -19,6 +19,11 @@ const joinCourse: RequestHandler = (req, res, next) => {
       })
     }
 
+    // Archived courses are hidden from students and no longer accept new enrollments.
+    if (course.archived) {
+      return next({ statusCode: 400, message: 'This course is no longer accepting enrollments.' })
+    }
+
     // Atomically enroll on both sides (course + account).
     Course.addEnrollment(course._id, accountId)
     const updatedAccount = Account.addEnrolledCourse(accountId, course._id)

@@ -17,17 +17,18 @@ import gradeInstance from '../controllers/admin/gradeInstance'
 
 const router = express.Router()
 const adminGuard = [checkBearerToken, checkAdmin]
+const instructorGuard = [checkBearerToken, checkInstructorOrAdmin]
 
 // Courses
-router.post('/courses', adminGuard, createCourse, errorHandler)
-router.patch('/courses/:id', adminGuard, updateCourse, errorHandler)
-router.post('/courses/:id/regenerate-code', adminGuard, regenerateCourseCode, errorHandler)
+router.post('/courses', instructorGuard, createCourse, errorHandler)
+router.patch('/courses/:id', instructorGuard, updateCourse, errorHandler)
+router.post('/courses/:id/regenerate-code', instructorGuard, regenerateCourseCode, errorHandler)
 
 // Patients
-router.post('/patients', adminGuard, createPatient, errorHandler)
-router.patch('/patients/:id', adminGuard, updatePatient, errorHandler)
-router.get('/patients/:templateId/instances', adminGuard, listInstances, errorHandler)
-router.post('/patients/:id/notes/:noteId/comments', adminGuard, addNoteComment, errorHandler)
+router.post('/patients', instructorGuard, createPatient, errorHandler)
+router.patch('/patients/:id', instructorGuard, updatePatient, errorHandler)
+router.get('/patients/:templateId/instances', instructorGuard, listInstances, errorHandler)
+router.post('/patients/:id/notes/:noteId/comments', instructorGuard, addNoteComment, errorHandler)
 router.patch('/patients/:id/grade', [checkBearerToken, checkInstructorOrAdmin], gradeInstance, errorHandler)
 
 // Accounts

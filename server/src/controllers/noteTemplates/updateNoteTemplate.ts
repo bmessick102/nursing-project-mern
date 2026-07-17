@@ -2,6 +2,7 @@ import { type RequestHandler } from 'express'
 import joi from '../../utils/joi'
 import NoteTemplate, { type NoteTemplate as NoteTemplateType } from '../../models/FileBasedNoteTemplate'
 import Course from '../../models/FileBasedCourse'
+import { isAdminRole, canManageCourseId } from '../../utils/authz'
 
 const soapSchema = joi.instance.object({
   subjective: joi.instance.string().allow('').optional(),
@@ -26,6 +27,16 @@ const updateNoteTemplate: RequestHandler = async (req, res, next) => {
 
     const existing = NoteTemplate.findById(id)
     if (!existing) return next({ statusCode: 404, message: 'Template not found' })
+
+    // Ownership on the EXISTING template.
+    if (existing.courseId === null || existing.courseId === undefined || String(existing.courseId) === '') {
+      // Global template: admins only.
+      if (!isAdminRole(req)) {
+        return next({ statusCode: 403, message: 'Only administrators can modify global templates.' })
+      }
+    } else if (!canManageCourseId(req, String(existing.courseId))) {
+      return next({ statusCode: 403, message: 'You can only modify templates for your own courses.' })
+    }
 
     const validationError = await joi.validate(
       {
@@ -52,6 +63,16 @@ const updateNoteTemplate: RequestHandler = async (req, res, next) => {
       if (nextCourseId !== null && nextCourseId !== undefined && String(nextCourseId) !== '') {
         const course = Course.findById(String(nextCourseId))
         if (!course) return next({ statusCode: 400, message: 'Course not found' })
+
+        // Ownership on the NEW target course.
+        if (!canManageCourseId(req, String(nextCourseId))) {
+          return next({ statusCode: 403, message: 'You can only modify templates for your own courses.' })
+        }
+      } else {
+        // Reassigning to GLOBAL: admins only.
+        if (!isAdminRole(req)) {
+          return next({ statusCode: 403, message: 'Only administrators can create global templates.' })
+        }
       }
     }
 

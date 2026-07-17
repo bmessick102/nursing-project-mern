@@ -1,6 +1,7 @@
 import { type RequestHandler } from 'express'
 import joi from '../../utils/joi'
 import Patient from '../../models/FileBasedPatient'
+import { canManageCourseId } from '../../utils/authz'
 
 const ALLOWED = [
   'isCaseStudy',
@@ -40,6 +41,10 @@ const updatePatient: RequestHandler = async (req, res, next) => {
 
     const existing = Patient.findById(id)
     if (!existing) return next({ statusCode: 404, message: 'Patient not found' })
+
+    if (!canManageCourseId(req, existing.courseId)) {
+      return next({ statusCode: 403, message: 'You can only manage patients in your own courses.' })
+    }
 
     const patch: Record<string, unknown> = {}
     for (const key of ALLOWED) {

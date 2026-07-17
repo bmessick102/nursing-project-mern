@@ -1,9 +1,11 @@
 import express, { type RequestHandler } from 'express'
 import rateLimit from 'express-rate-limit'
 import checkBearerToken from '../middlewares/check-bearer-token'
-import checkAdmin from '../middlewares/check-admin'
+import checkInstructorOrAdmin from '../middlewares/check-instructor-or-admin'
 import errorHandler from '../middlewares/error-handler'
 import Course from '../models/FileBasedCourse'
+import Account from '../models/FileBasedAccount'
+import { isAdminRole } from '../utils/authz'
 import joinCourse from '../controllers/courses/joinCourse'
 
 const router = express.Router()
@@ -23,7 +25,20 @@ const joinLimiter = rateLimit({
 const getAllCourses: RequestHandler = (req, res, next) => {
   try {
     const role = (req as any).auth?.role as string | undefined
-    const courses = Course.findAll().map((c) => Course.serializeCourse(c, role))
+    const admin = isAdminRole(req as any)
+    const list = admin ? Course.findAll() : Course.findOwnedFor((req as any).auth?.uid || '')
+    const courses = list.map((c) => {
+      const serialized = Course.serializeCourse(c, role)
+      // Surface the true publisher (creating account) to admins only — the free-typed
+      // `instructor` field can be blank/misspelled and isn't necessarily the account
+      // that registered the course.
+      if (!admin) return serialized
+      const owner = c.ownerAccountId ? Account.findById(c.ownerAccountId) : undefined
+      const publisherName = owner
+        ? [owner.firstName, owner.lastName].filter(Boolean).join(' ').trim() || owner.username
+        : undefined
+      return { ...serialized, publisherName, publisherUsername: owner?.username }
+    })
     res.status(200).json({
       message: 'Successfully retrieved courses',
       data: courses,
@@ -41,10 +56,12 @@ const getMyCourses: RequestHandler = (req, res, next) => {
     const role = (req as any).auth?.role as string | undefined
 
     // Administrators see every course; students see only enrolled.
-    const courses =
+    // Hide archived courses from the student-facing enrolled list either way.
+    const courses = (
       role === 'administrator' || role === 'admin'
         ? Course.findAll()
         : Course.findEnrolledFor(accountId)
+    ).filter((c) => !c.archived)
 
     res.status(200).json({
       message: 'Successfully retrieved enrolled courses',
@@ -88,7 +105,7 @@ const getCourseById: RequestHandler = (req, res, next) => {
   }
 }
 
-router.get('/', [checkBearerToken, checkAdmin], getAllCourses, errorHandler)
+router.get('/', [checkBearerToken, checkInstructorOrAdmin], getAllCourses, errorHandler)
 router.get('/mine', [checkBearerToken], getMyCourses, errorHandler)
 router.post('/join', [checkBearerToken, joinLimiter], joinCourse, errorHandler)
 router.get('/:id', [checkBearerToken], getCourseById, errorHandler)

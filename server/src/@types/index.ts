@@ -24,6 +24,10 @@ export interface Course {
   description: string
   inviteCode: string
   enrolledAccountIds: string[]
+  // Account id of the faculty/admin who created the course; absent on legacy courses.
+  ownerAccountId?: string
+  // Soft-archive flag: when true the course is hidden from students but stays manageable/un-archivable.
+  archived?: boolean
   createdAt: string
   updatedAt: string
 }

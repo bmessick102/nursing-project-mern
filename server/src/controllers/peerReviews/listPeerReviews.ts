@@ -2,6 +2,8 @@ import { type RequestHandler } from 'express'
 import joi from '../../utils/joi'
 import PeerReview from '../../models/FileBasedPeerReview'
 import Account from '../../models/FileBasedAccount'
+import Patient from '../../models/FileBasedPatient'
+import { canManageCourseId } from '../../utils/authz'
 
 // Resolve an account's display name without ever leaking the password hash.
 const resolveName = (accountId: string): string => {
@@ -22,6 +24,14 @@ const listPeerReviews: RequestHandler = async (req, res, next) => {
     if (validationError) return next(validationError)
 
     const templateId = req.query.templateId as string
+
+    // Load the template to determine its course, then enforce ownership.
+    const template = Patient.findById(templateId)
+    if (!template) return next({ statusCode: 404, message: 'Template not found' })
+
+    if (!canManageCourseId(req, template.courseId)) {
+      return next({ statusCode: 403, message: 'You can only view peer reviews for your own courses.' })
+    }
 
     const reviews = PeerReview.findByTemplate(templateId).map((r) => ({
       ...r,

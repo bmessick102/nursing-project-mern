@@ -22,7 +22,16 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material'
-import { Refresh, ContentCopy, Edit as EditIcon, OpenInNew, Delete as DeleteIcon } from '@mui/icons-material'
+import {
+  Refresh,
+  ContentCopy,
+  Edit as EditIcon,
+  OpenInNew,
+  Delete as DeleteIcon,
+  Archive as ArchiveIcon,
+  Unarchive as UnarchiveIcon,
+  AssignmentInd,
+} from '@mui/icons-material'
 import type { Course, Patient, NoteTemplate } from '@types'
 import { useChartingApi } from 'hooks/useChartingApi'
 import { useCurrentUser } from 'hooks/useCurrentUser'
@@ -35,7 +44,9 @@ import RegenerateCodeDialog from 'components/admin/RegenerateCodeDialog'
 import CreateAccountDialog from 'components/admin/CreateAccountDialog'
 import EditAccountDialog from 'components/admin/EditAccountDialog'
 import NoteTemplateDialog from 'components/admin/NoteTemplateDialog'
+import NoteTemplateImportDialog from 'components/admin/NoteTemplateImportDialog'
 import GradeDialog from 'components/admin/GradeDialog'
+import AssignOwnerDialog from 'components/admin/AssignOwnerDialog'
 import { useAuth } from 'contexts/AuthContext'
 import { useAppStore } from 'store/useAppStore'
 import styles from 'styles/AdminDashboardPage.module.css'
@@ -58,6 +69,7 @@ interface StudentInstanceRow {
   studentName: string
   noteCount: number
   updatedAt: string
+  grade?: { score: number; maxScore: number; feedback?: string; gradedBy: string; gradedAt: string }
 }
 
 interface PeerReviewRow {
@@ -74,6 +86,7 @@ const AdminDashboardPage: React.FC = () => {
     fetchCourses,
     fetchPatientsByCourse,
     adminCreateCourse,
+    adminUpdateCourse,
     adminRegenerateCourseCode,
     adminCreatePatient,
     adminListAccounts,
@@ -91,6 +104,7 @@ const AdminDashboardPage: React.FC = () => {
   } = useChartingApi()
   const { displayName, username } = useCurrentUser()
   const { account: callerAccount, logout } = useAuth()
+  const isAdmin = callerAccount?.role === 'administrator' || callerAccount?.role === 'admin'
   const { setSelectedCourse, setSelectedPatient } = useAppStore()
   const { notifySuccess, notifyError } = useSnackbar()
 
@@ -101,7 +115,7 @@ const AdminDashboardPage: React.FC = () => {
     navigate('/login', { replace: true })
   }
 
-  const [tab, setTab] = useState(0)
+  const [tab, setTab] = useState<'courses' | 'patients' | 'accounts' | 'review' | 'templates'>('courses')
   const [courses, setCourses] = useState<Course[]>([])
   const [patients, setPatients] = useState<Patient[]>([])
   const [accounts, setAccounts] = useState<AdminAccount[]>([])
@@ -109,6 +123,7 @@ const AdminDashboardPage: React.FC = () => {
   const [createCourseOpen, setCreateCourseOpen] = useState(false)
   const [createPatientOpen, setCreatePatientOpen] = useState(false)
   const [regenCourse, setRegenCourse] = useState<Course | null>(null)
+  const [assignOwnerCourse, setAssignOwnerCourse] = useState<Course | null>(null)
   const [copySnack, setCopySnack] = useState<string | null>(null)
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdminAccount | null>(null)
@@ -123,6 +138,7 @@ const AdminDashboardPage: React.FC = () => {
   const [templates, setTemplates] = useState<NoteTemplate[]>([])
   const [templateCourseId, setTemplateCourseId] = useState<string>('')
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null)
 
   const loadCourses = useCallback(async () => {
@@ -170,8 +186,8 @@ const AdminDashboardPage: React.FC = () => {
   }, [filterCourseId, loadPatients])
 
   useEffect(() => {
-    loadAccounts()
-  }, [loadAccounts])
+    if (isAdmin) loadAccounts()
+  }, [isAdmin, loadAccounts])
 
   const loadTemplates = useCallback(
     async (courseId: string) => {
@@ -211,6 +227,49 @@ const AdminDashboardPage: React.FC = () => {
       const updated = await adminRegenerateCourseCode(regenCourse._id)
       notifySuccess(`New code for ${regenCourse.name}: ${updated.inviteCode}`)
       setRegenCourse(null)
+      loadCourses()
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
+  }
+
+  const handleToggleArchive = async (c: Course) => {
+    if (c.archived) {
+      try {
+        await adminUpdateCourse(c._id, { archived: false })
+        notifySuccess(`"${c.name}" un-archived.`)
+        loadCourses()
+      } catch (err) {
+        /* surfaced via snackbar */
+      }
+      return
+    }
+    const ok = window.confirm(
+      `Archive "${c.name}"? Students will no longer see or be able to join it. You can un-archive it later.`,
+    )
+    if (!ok) return
+    try {
+      await adminUpdateCourse(c._id, { archived: true })
+      notifySuccess(`"${c.name}" archived.`)
+      loadCourses()
+    } catch (err) {
+      /* surfaced via snackbar */
+    }
+  }
+
+  const instructorOptions = accounts
+    .filter((a) => a.role === 'instructor' || a.role === 'administrator' || a.role === 'admin')
+    .map((a) => ({
+      value: a._id,
+      label: `${[a.firstName, a.lastName].filter(Boolean).join(' ') || a.username} (${a.username})`,
+    }))
+
+  const handleAssignOwner = async (ownerAccountId: string) => {
+    if (!assignOwnerCourse) return
+    try {
+      await adminUpdateCourse(assignOwnerCourse._id, { ownerAccountId })
+      notifySuccess('Course owner updated.')
+      setAssignOwnerCourse(null)
       loadCourses()
     } catch (err) {
       /* surfaced via snackbar */
@@ -274,6 +333,32 @@ const AdminDashboardPage: React.FC = () => {
     } catch (err) {
       /* surfaced via snackbar */
     }
+  }
+
+  const handleImportTemplates = async (
+    payloads: Array<{
+      name: string
+      courseId: string | null
+      format: 'freetext'
+      content: string
+      defaultRole?: string
+    }>,
+  ) => {
+    let ok = 0
+    let failed = 0
+    for (const p of payloads) {
+      try {
+        await createNoteTemplate(p)
+        ok++
+      } catch {
+        failed++
+      }
+    }
+    const summary = `Imported ${ok} template(s)` + (failed ? `, ${failed} failed` : '')
+    if (ok === 0) notifyError(summary)
+    else notifySuccess(summary)
+    setImportOpen(false)
+    loadTemplates(templateCourseId)
   }
 
   const handleDeleteTemplate = async (t: NoteTemplate) => {
@@ -389,6 +474,40 @@ const AdminDashboardPage: React.FC = () => {
     }
   }
 
+  const handleExportGrades = () => {
+    const esc = (val: string) =>
+      /[",\n]/.test(val) ? `"${val.replace(/"/g, '""')}"` : val
+    const header = 'Student,Score,Max,Percent,Feedback,Notes,Last Updated'
+    const rows = reviewInstances.map((row) => {
+      const score = row.grade?.score ?? ''
+      const max = row.grade?.maxScore ?? ''
+      const percent = row.grade
+        ? Math.round((row.grade.score / row.grade.maxScore) * 100) + '%'
+        : ''
+      const feedback = row.grade?.feedback ?? ''
+      const lastUpdated = row.updatedAt ? new Date(row.updatedAt).toLocaleString() : ''
+      return [
+        esc(row.studentName),
+        esc(String(score)),
+        esc(String(max)),
+        esc(percent),
+        esc(feedback),
+        esc(String(row.noteCount)),
+        esc(lastUpdated),
+      ].join(',')
+    })
+    const csv = [header, ...rows].join('\n')
+    const caseStudyName =
+      reviewCaseStudies.find((p) => p._id === reviewCaseStudyId)?.name || 'case-study'
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `grades-${caseStudyName.replace(/[^a-z0-9]+/gi, '-')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleOpenStudentNotes = (row: StudentInstanceRow) => {
     const course = courses.find((c) => c._id === reviewCourseId)
     if (course) setSelectedCourse(course)
@@ -422,7 +541,7 @@ const AdminDashboardPage: React.FC = () => {
               <img src="/images/logo.jpg" alt="CUW School of Nursing" />
             </div>
             <Box>
-              <span className={styles.heroEyebrow}>Administrator Console</span>
+              <span className={styles.heroEyebrow}>{isAdmin ? 'Administrator Console' : 'Faculty Console'}</span>
               <Typography variant="h4" component="h1" className={styles.heroTitle}>
                 CUW Charting · Admin
               </Typography>
@@ -446,18 +565,18 @@ const AdminDashboardPage: React.FC = () => {
             onChange={(_, v) => setTab(v)}
             aria-label="Administrator console sections"
           >
-            <Tab label={`Courses (${courses.length})`} />
-            <Tab label={`Patients (${patients.length})`} />
-            <Tab label={`Accounts (${accounts.length})`} />
-            <Tab label="Case Study Review" />
-            <Tab label="Note Templates" />
+            <Tab value="courses" label={`Courses (${courses.length})`} />
+            <Tab value="patients" label={`Patients (${patients.length})`} />
+            {isAdmin && <Tab value="accounts" label={`Accounts (${accounts.length})`} />}
+            <Tab value="review" label="Case Study Review" />
+            <Tab value="templates" label="Note Templates" />
           </Tabs>
         </Container>
       </Box>
 
       <Container maxWidth="xl" className={styles.content}>
         {/* COURSES */}
-        {tab === 0 && (
+        {tab === 'courses' && (
           <Box>
             <Stack
               direction="row"
@@ -490,6 +609,7 @@ const AdminDashboardPage: React.FC = () => {
                       <TableCell>Code</TableCell>
                       <TableCell>Name</TableCell>
                       <TableCell>Instructor</TableCell>
+                      {isAdmin && <TableCell>Created By</TableCell>}
                       <TableCell>Enrolled</TableCell>
                       <TableCell>Join Code</TableCell>
                       <TableCell>Actions</TableCell>
@@ -499,8 +619,22 @@ const AdminDashboardPage: React.FC = () => {
                     {courses.map((c) => (
                       <TableRow key={c._id} hover>
                         <TableCell sx={{ fontWeight: 700 }}>{c.code}</TableCell>
-                        <TableCell>{c.name}</TableCell>
+                        <TableCell>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <span>{c.name}</span>
+                            {c.archived && (
+                              <Chip
+                                size="small"
+                                label="Archived"
+                                sx={{ backgroundColor: '#EEE', color: '#8A6D00', fontWeight: 700 }}
+                              />
+                            )}
+                          </Stack>
+                        </TableCell>
                         <TableCell sx={{ color: '#595959' }}>{c.instructor}</TableCell>
+                        {isAdmin && (
+                          <TableCell sx={{ color: '#595959' }}>{c.publisherName || '—'}</TableCell>
+                        )}
                         <TableCell>
                           <Chip
                             size="small"
@@ -523,15 +657,41 @@ const AdminDashboardPage: React.FC = () => {
                           </Stack>
                         </TableCell>
                         <TableCell>
-                          <Tooltip title="Regenerate code (revokes old)">
-                            <IconButton
-                              size="small"
-                              onClick={() => setRegenCourse(c)}
-                              aria-label="regenerate course code"
-                            >
-                              <Refresh fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Tooltip title="Regenerate code (revokes old)">
+                              <IconButton
+                                size="small"
+                                onClick={() => setRegenCourse(c)}
+                                aria-label="regenerate course code"
+                              >
+                                <Refresh fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            {isAdmin && (
+                              <Tooltip title="Assign owner">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => setAssignOwnerCourse(c)}
+                                  aria-label="assign course owner"
+                                >
+                                  <AssignmentInd fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            <Tooltip title={c.archived ? 'Un-archive course' : 'Archive course'}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleToggleArchive(c)}
+                                aria-label={c.archived ? 'unarchive course' : 'archive course'}
+                              >
+                                {c.archived ? (
+                                  <UnarchiveIcon fontSize="small" />
+                                ) : (
+                                  <ArchiveIcon fontSize="small" />
+                                )}
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -543,7 +703,7 @@ const AdminDashboardPage: React.FC = () => {
         )}
 
         {/* PATIENTS */}
-        {tab === 1 && (
+        {tab === 'patients' && (
           <Box>
             <Stack
               direction="row"
@@ -644,7 +804,7 @@ const AdminDashboardPage: React.FC = () => {
         )}
 
         {/* ACCOUNTS */}
-        {tab === 2 && (
+        {isAdmin && tab === 'accounts' && (
           <Box>
             <Stack
               direction="row"
@@ -756,7 +916,7 @@ const AdminDashboardPage: React.FC = () => {
         )}
 
         {/* CASE STUDY REVIEW */}
-        {tab === 3 && (
+        {tab === 'review' && (
           <Box>
             <Typography component="h2" variant="h6" sx={{ color: '#003D82', fontWeight: 700, mb: 2 }}>
               Case Study Review
@@ -791,11 +951,20 @@ const AdminDashboardPage: React.FC = () => {
             ) : reviewInstances.length === 0 ? (
               <EmptyState message="No students have started this case study yet." />
             ) : (
-              <TableContainer component={Paper} className={styles.sectionCard}>
+              <>
+                {reviewInstances.length > 0 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                    <Button size="small" variant="outlined" onClick={handleExportGrades}>
+                      Export grades (CSV)
+                    </Button>
+                  </Box>
+                )}
+                <TableContainer component={Paper} className={styles.sectionCard}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Student</TableCell>
+                      <TableCell>Grade</TableCell>
                       <TableCell>Notes</TableCell>
                       <TableCell>Last updated</TableCell>
                       <TableCell>Actions</TableCell>
@@ -805,6 +974,9 @@ const AdminDashboardPage: React.FC = () => {
                     {reviewInstances.map((row) => (
                       <TableRow key={row._id} hover>
                         <TableCell sx={{ fontWeight: 600 }}>{row.studentName}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#003D82' }}>
+                          {row.grade ? `${row.grade.score}/${row.grade.maxScore}` : '—'}
+                        </TableCell>
                         <TableCell>
                           <Chip
                             size="small"
@@ -839,7 +1011,8 @@ const AdminDashboardPage: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
+                </TableContainer>
+              </>
             )}
 
             {reviewInstances.length > 0 && (
@@ -923,7 +1096,7 @@ const AdminDashboardPage: React.FC = () => {
         )}
 
         {/* NOTE TEMPLATES */}
-        {tab === 4 && (
+        {tab === 'templates' && (
           <Box>
             <Stack
               direction="row"
@@ -945,16 +1118,21 @@ const AdminDashboardPage: React.FC = () => {
                   />
                 </Box>
               </Stack>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  setEditingTemplate(null)
-                  setTemplateDialogOpen(true)
-                }}
-                sx={{ backgroundColor: '#003D82' }}
-              >
-                New Template
-              </Button>
+              <Stack direction="row" spacing={1}>
+                <Button variant="outlined" onClick={() => setImportOpen(true)}>
+                  Import Templates
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    setEditingTemplate(null)
+                    setTemplateDialogOpen(true)
+                  }}
+                  sx={{ backgroundColor: '#003D82' }}
+                >
+                  New Template
+                </Button>
+              </Stack>
             </Stack>
 
             {templates.length === 0 ? (
@@ -1079,13 +1257,39 @@ const AdminDashboardPage: React.FC = () => {
         }}
         onSubmit={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
       />
+      <NoteTemplateImportDialog
+        open={importOpen}
+        loading={loading}
+        courses={courses}
+        allowGlobal={isAdmin}
+        onClose={() => setImportOpen(false)}
+        onSubmit={handleImportTemplates}
+      />
 
       <GradeDialog
         open={gradingRow !== null}
         loading={loading}
         studentName={gradingRow?.studentName}
+        initial={
+          gradingRow
+            ? {
+                score: gradingRow.grade?.score ?? 0,
+                maxScore: gradingRow.grade?.maxScore ?? 100,
+                feedback: gradingRow.grade?.feedback ?? '',
+              }
+            : undefined
+        }
         onClose={() => setGradingRow(null)}
         onSubmit={handleGradeSubmit}
+      />
+
+      <AssignOwnerDialog
+        open={assignOwnerCourse !== null}
+        loading={loading}
+        course={assignOwnerCourse}
+        instructorOptions={instructorOptions}
+        onClose={() => setAssignOwnerCourse(null)}
+        onSubmit={handleAssignOwner}
       />
 
       <Snackbar

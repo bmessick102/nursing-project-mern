@@ -21,6 +21,7 @@ const createCourse: RequestHandler = async (req, res, next) => {
       code: String(code).trim(),
       instructor: String(instructor || '').trim(),
       description: String(description || '').trim(),
+      ownerAccountId: req.auth?.uid,
     })
     res.status(201).json({ message: 'Course created', data: created })
   } catch (error) {

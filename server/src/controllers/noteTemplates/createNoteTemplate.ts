@@ -3,6 +3,7 @@ import joi from '../../utils/joi'
 import NoteTemplate from '../../models/FileBasedNoteTemplate'
 import Course from '../../models/FileBasedCourse'
 import Account from '../../models/FileBasedAccount'
+import { isAdminRole, canManageCourseId } from '../../utils/authz'
 
 const soapSchema = joi.instance.object({
   subjective: joi.instance.string().allow('').optional(),
@@ -33,6 +34,16 @@ const createNoteTemplate: RequestHandler = async (req, res, next) => {
     if (courseId !== null && courseId !== undefined && String(courseId) !== '') {
       const course = Course.findById(String(courseId))
       if (!course) return next({ statusCode: 400, message: 'Course not found' })
+
+      // Ownership: faculty may only create templates for their own courses.
+      if (!canManageCourseId(req, String(courseId))) {
+        return next({ statusCode: 403, message: 'You can only create templates for your own courses.' })
+      }
+    } else {
+      // GLOBAL template (courseId null/empty): admins only.
+      if (!isAdminRole(req)) {
+        return next({ statusCode: 403, message: 'Only administrators can create global templates.' })
+      }
     }
 
     // Resolve a human-readable author name for display/attribution.
